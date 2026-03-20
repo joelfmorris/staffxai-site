@@ -40,8 +40,7 @@ export const SERVICES = [
     body: "We assess your current operations, identify high-impact AI opportunities, and build a prioritised roadmap your leadership team can actually execute. No generic playbooks — every recommendation is tailored to your business, your people, and your tech stack.",
     cta: "Explore Strategy →",
     // Replace with: "/images/service-transformation-audit.webp"
-    image:
-      "/images/service-transformation-audit.webp",
+    image: "/images/service-transformation-audit.webp",
     alt: "Warm lightbulb representing strategic insight",
   },
   {
@@ -50,8 +49,7 @@ export const SERVICES = [
     body: "Hands-on workshops that turn your team from AI-curious to AI-competent. Our Microsoft Copilot masterclasses, prompt engineering sessions, and change management programs are designed for real adoption — not just awareness.",
     cta: "Explore Education →",
     // Replace with: "/images/service-masterclass-copilot-training.webp"
-    image:
-      "/images/service-masterclass-copilot-training.webp",
+    image: "/images/service-masterclass-copilot-training.webp",
     alt: "Monitor and tablet with learning interface representing education",
   },
   {
@@ -60,8 +58,7 @@ export const SERVICES = [
     body: "From intelligent workflows to bespoke AI agents, we build and deploy solutions that integrate with your existing systems. We handle the technical complexity so your team can focus on outcomes.",
     cta: "Explore Development →",
     // Replace with: "/images/service-agent-implementation.webp"
-    image:
-      "/images/service-agent-implementation.webp",
+    image: "/images/service-agent-implementation.webp",
     alt: "clear action nodes in block form representing AI agentic workflow",
   },
 ];
