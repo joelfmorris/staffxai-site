@@ -41,7 +41,7 @@ export const SERVICES = [
     cta: "Explore Strategy →",
     // Replace with: "/images/service-transformation-audit.webp"
     image:
-      "https://images.unsplash.com/photo-1586717799252-bd134f3d4236?w=800&q=80&auto=format",
+      "https://images/service-transformation-audit.webp",
     alt: "Warm lightbulb representing strategic insight",
   },
   {
@@ -51,8 +51,8 @@ export const SERVICES = [
     cta: "Explore Education →",
     // Replace with: "/images/service-masterclass-copilot-training.webp"
     image:
-      "https://images.unsplash.com/photo-1544717297-fa95b6ee9643?w=800&q=80&auto=format",
-    alt: "Tablet with learning interface representing education",
+      "https://images/service-masterclass-copilot-training.webp",
+    alt: "Monitor and tablet with learning interface representing education",
   },
   {
     label: "DEVELOPMENT",
@@ -61,8 +61,8 @@ export const SERVICES = [
     cta: "Explore Development →",
     // Replace with: "/images/service-agent-implementation.webp"
     image:
-      "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80&auto=format",
-    alt: "Dashboard interface showing AI analytics and insights",
+      "https://images/service-agent-implementation.webp",
+    alt: "clear action nodes in block form representing AI agentic workflow",
   },
 ];
 
