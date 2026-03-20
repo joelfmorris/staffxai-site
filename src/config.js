@@ -41,7 +41,7 @@ export const SERVICES = [
     cta: "Explore Strategy →",
     // Replace with: "/images/service-transformation-audit.webp"
     image:
-      "https://images/service-transformation-audit.webp",
+      "/images/service-transformation-audit.webp",
     alt: "Warm lightbulb representing strategic insight",
   },
   {
@@ -51,7 +51,7 @@ export const SERVICES = [
     cta: "Explore Education →",
     // Replace with: "/images/service-masterclass-copilot-training.webp"
     image:
-      "https://images/service-masterclass-copilot-training.webp",
+      "/images/service-masterclass-copilot-training.webp",
     alt: "Monitor and tablet with learning interface representing education",
   },
   {
@@ -61,7 +61,7 @@ export const SERVICES = [
     cta: "Explore Development →",
     // Replace with: "/images/service-agent-implementation.webp"
     image:
-      "https://images/service-agent-implementation.webp",
+      "/images/service-agent-implementation.webp",
     alt: "clear action nodes in block form representing AI agentic workflow",
   },
 ];
