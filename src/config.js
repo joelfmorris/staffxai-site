@@ -8,7 +8,7 @@ export const BRAND = {
   name: "StaffxAI",
   tagline: "AI adoption that actually sticks.",
   description:
-    "Guaranteed AI transformation for Australian businesses. Strategy, education, and implementation that your team will actually use.",
+    "Guaranteed rates of AI adoption, or you pay $0. Strategy, education, and implementation that your team will actually use.",
   cta: "Book an intro",
   calendlyUrl: "https://calendly.com/joel-staffxai/30min",
   email: "service@staffxai.com.au",
@@ -27,10 +27,10 @@ export const NAV_LINKS = [
 ];
 
 export const CLIENTS = [
-  "Gradability",
-  "Performance Education",
-  "OES",
-  "MyIntegra",
+  "",
+  "",
+  "",
+  "",
 ];
 
 export const SERVICES = [
@@ -39,7 +39,7 @@ export const SERVICES = [
     title: "AI audits & transformation roadmaps",
     body: "We assess your current operations, identify high-impact AI opportunities, and build a prioritised roadmap your leadership team can actually execute. No generic playbooks — every recommendation is tailored to your business, your people, and your tech stack.",
     cta: "Explore Strategy →",
-    // Replace with: "/images/service-strategy.webp"
+    // Replace with: "/images/service-transformation-audit.webp"
     image:
       "https://images.unsplash.com/photo-1586717799252-bd134f3d4236?w=800&q=80&auto=format",
     alt: "Warm lightbulb representing strategic insight",
@@ -49,7 +49,7 @@ export const SERVICES = [
     title: "AI masterclasses & Copilot training",
     body: "Hands-on workshops that turn your team from AI-curious to AI-competent. Our Microsoft Copilot masterclasses, prompt engineering sessions, and change management programs are designed for real adoption — not just awareness.",
     cta: "Explore Education →",
-    // Replace with: "/images/service-education.webp"
+    // Replace with: "/images/service-masterclass-copilot-training.webp"
     image:
       "https://images.unsplash.com/photo-1544717297-fa95b6ee9643?w=800&q=80&auto=format",
     alt: "Tablet with learning interface representing education",
@@ -59,7 +59,7 @@ export const SERVICES = [
     title: "Custom AI agents & implementation",
     body: "From intelligent workflows to bespoke AI agents, we build and deploy solutions that integrate with your existing systems. We handle the technical complexity so your team can focus on outcomes.",
     cta: "Explore Development →",
-    // Replace with: "/images/service-development.webp"
+    // Replace with: "/images/service-agent-implementation.webp"
     image:
       "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80&auto=format",
     alt: "Dashboard interface showing AI analytics and insights",
@@ -160,6 +160,11 @@ export const FAQS = [
     a: "Not at all. Our programs are designed for business leaders and non-technical teams. We handle the technical complexity and translate everything into clear, actionable language your team can work with.",
   },
   {
+    q: "What’s the difference between this and “AI training?",
+    a: "Training is one input. This program includes training plus champions, dashboards, automations, governance and executive alignment — and it’s backed by a guarantee.",
+  },
+
+  {
     q: "What\u2019s included in the Copilot masterclasses?",
     a: "Each session is 2 hours of hands-on training covering real workflows in your Microsoft 365 environment. Topics include prompting techniques, Copilot in Teams/Word/Excel/PowerPoint, and building custom Copilot agents. We tailor content to your industry and use cases.",
   },
@@ -172,12 +177,16 @@ export const FAQS = [
     a: "On our Enterprise tier, we agree on specific adoption metrics upfront \u2014 for example, 80% of your team actively using Copilot within 6 months. If we don\u2019t hit those targets, you don\u2019t pay for that quarter. We take on the risk because we\u2019re confident in our methodology.",
   },
   {
-    q: "How long does a typical engagement last?",
-    a: "The Spark audit is a 2\u20133 week engagement. Accelerate runs quarterly with the option to renew. Enterprise partnerships are typically 12 months. We\u2019ll recommend the right fit during your free strategy call.",
+    q: "How many internal people do we need involved?",
+    a: "Typically: an exec sponsor, 1–2 program owners, and a champions group (we help set it up).",
   },
   {
-    q: "Do you work with companies outside Australia?",
-    a: "Our primary focus is Australian businesses, but we\u2019ve delivered remote masterclasses and audits for teams in New Zealand, Singapore, and the UK. If you\u2019re in a similar timezone, we can make it work.",
+    q: "How long does a typical engagement last?",
+    a: "The Spark audit is a 2\u20133 week engagement. Accelerate runs quarterly with the option to renew. Enterprise partnerships are typically 6-12 months. We\u2019ll recommend the right fit during your free strategy call.",
+  },
+  {
+    q: "What industries do you specialise in?",
+    a: "Disability & Aged Care, Education, Energy, Professional Services, Waste, Advertising/Media, Research — and adjacent industries with similar operational workflows.",
   },
   {
     q: "What does the free AI insights call involve?",
