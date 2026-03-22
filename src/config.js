@@ -11,10 +11,10 @@ export const BRAND = {
     "Guaranteed rates of AI adoption, or you pay $0. Strategy, education, and implementation that your team will actually use.",
   cta: "Book an intro",
   calendlyUrl: "https://calendly.com/joel-staffxai/30min",
-  email: "service@staffxai.com.au",
+  email: "enquiries@staffxai.com.au",
   social: {
     linkedin: "https://linkedin.com/company/staffxai",
-    x: "https://x.com/staffxai",
+    x: "https://x.com/StaffxAI_au",
   },
 };
 
