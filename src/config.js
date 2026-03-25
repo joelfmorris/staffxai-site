@@ -37,18 +37,16 @@ export const SERVICES = [
   {
     label: "STRATEGY",
     title: "AI audits & transformation roadmaps",
-    body: "We assess your current operations, identify high-impact AI opportunities, and build a prioritised roadmap your leadership team can actually execute. No generic playbooks — every recommendation is tailored to your business, your people, and your tech stack.",
-    cta: "Explore Strategy →",
-    // Replace with: "/Images/service-transformation-audit.webp"
+    body: "We assess your current operations, identify high-impact AI opportunities, and build a prioritised roadmap your leadership team can actually execute. No generic playbooks \u2014 every recommendation is tailored to your business, your people, and your tech stack.",
+    cta: "Explore Strategy \u2192",
     image: "/Images/service-transformation-audit.webp",
     alt: "Warm lightbulb representing strategic insight",
   },
   {
     label: "EDUCATION",
     title: "AI masterclasses & Copilot training",
-    body: "Hands-on workshops that turn your team from AI-curious to AI-competent. Our Microsoft Copilot masterclasses, prompt engineering sessions, and change management programs are designed for real adoption — not just awareness.",
-    cta: "Explore Education →",
-    // Replace with: "/Images/service-masterclass-copilot-training.webp"
+    body: "Hands-on workshops that turn your team from AI-curious to AI-competent. Our Microsoft Copilot masterclasses, prompt engineering sessions, and change management programs are designed for real adoption \u2014 not just awareness.",
+    cta: "Explore Education \u2192",
     image: "/Images/service-masterclass-copilot-training.webp",
     alt: "Monitor and tablet with learning interface representing education",
   },
@@ -56,22 +54,38 @@ export const SERVICES = [
     label: "DEVELOPMENT",
     title: "Custom AI agents & implementation",
     body: "From intelligent workflows to bespoke AI agents, we build and deploy solutions that integrate with your existing systems. We handle the technical complexity so your team can focus on outcomes.",
-    cta: "Explore Development →",
-    // Replace with: "/Images/service-agent-implementation.webp"
+    cta: "Explore Development \u2192",
     image: "/Images/service-agent-implementation.webp",
     alt: "clear action nodes in block form representing AI agentic workflow",
   },
 ];
 
-export const TESTIMONIAL = {
-  // Replace with real customer data
-  quote:
-    "StaffxAI didn\u2019t just give us a strategy deck \u2014 they stayed with our team through every step of the rollout. Six months in, 85% of our staff use Copilot daily. That\u2019s unheard of.",
-  name: "Sarah Chen",
-  title: "Chief Operating Officer, TechForward Australia",
-  // Replace with: "/images/testimonial.webp"
-  image:
-    "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&q=80&auto=format",
+export const PROBLEM_STATEMENT = {
+  heading: "The problem (why most AI transformations stall)",
+  subheading: "If you\u2019ve already bought Copilot or started experimenting with generative AI, you\u2019ve probably seen it:",
+  cards: [
+    {
+      icon: "chat",
+      title: "Licences purchased\u2026 but usage stays low",
+      body: "Identify high-impact AI use cases, quantify ROI, and get a clear, board-ready rollout plan tailored to your business.",
+    },
+    {
+      icon: "check",
+      title: "Managers don\u2019t know what \u201Cgood adoption\u201D looks like",
+      body: "Align leaders, upskill teams, and drive real usage with hands-on training, usage dashboards, and a network of internal AI champions.",
+    },
+    {
+      icon: "sparkle",
+      title: "No workflow-level automations, so AI feels like extra work",
+      body: "Implement robust data security, usage policies, and risk playbooks to ensure safe, compliant, and effective AI adoption.",
+    },
+    {
+      icon: "document",
+      title: "No clear ROI narrative for the board",
+      body: "Quarterly health checks, prompt library updates, and continuous improvement to keep your AI program delivering measurable value.",
+    },
+  ],
+  closing: "Most organisations don\u2019t fail on technology. They fail on adoption and change.",
 };
 
 export const METRICS = [
@@ -157,10 +171,9 @@ export const FAQS = [
     a: "Not at all. Our programs are designed for business leaders and non-technical teams. We handle the technical complexity and translate everything into clear, actionable language your team can work with.",
   },
   {
-    q: "What’s the difference between this and “AI training?",
-    a: "Training is one input. This program includes training plus champions, dashboards, automations, governance and executive alignment — and it’s backed by a guarantee.",
+    q: "What\u2019s the difference between this and \u201CAI training\u201D?",
+    a: "Training is one input. This program includes training plus champions, dashboards, automations, governance and executive alignment \u2014 and it\u2019s backed by a guarantee.",
   },
-
   {
     q: "What\u2019s included in the Copilot masterclasses?",
     a: "Each session is 2 hours of hands-on training covering real workflows in your Microsoft 365 environment. Topics include prompting techniques, Copilot in Teams/Word/Excel/PowerPoint, and building custom Copilot agents. We tailor content to your industry and use cases.",
@@ -175,7 +188,7 @@ export const FAQS = [
   },
   {
     q: "How many internal people do we need involved?",
-    a: "Typically: an exec sponsor, 1–2 program owners, and a champions group (we help set it up).",
+    a: "Typically: an exec sponsor, 1\u20132 program owners, and a champions group (we help set it up).",
   },
   {
     q: "How long does a typical engagement last?",
@@ -183,7 +196,7 @@ export const FAQS = [
   },
   {
     q: "What industries do you specialise in?",
-    a: "Disability & Aged Care, Education, Energy, Professional Services, Waste, Advertising/Media, Research — and adjacent industries with similar operational workflows.",
+    a: "Disability & Aged Care, Education, Energy, Professional Services, Waste, Advertising/Media, Research \u2014 and adjacent industries with similar operational workflows.",
   },
   {
     q: "What does the free AI insights call involve?",

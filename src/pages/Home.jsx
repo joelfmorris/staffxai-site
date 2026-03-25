@@ -3,7 +3,7 @@ import {
   BRAND,
   CLIENTS,
   SERVICES,
-  TESTIMONIAL,
+  PROBLEM_STATEMENT,
   METRICS,
   PRICING,
   FAQS,
@@ -161,32 +161,72 @@ function Services() {
   );
 }
 
-/* ─── Testimonial ────────────────────────────────────── */
-function Testimonial() {
+/* ─── ProblemStatement ────────────────────────────────────── */
+function ProblemStatement() {
   const [ref, visible] = useScrollReveal();
+ 
+  const icons = {
+    chat: (
+      <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="#FA50B5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      </svg>
+    ),
+    check: (
+      <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="#FA50B5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+        <polyline points="22 4 12 14.01 9 11.01" />
+      </svg>
+    ),
+    sparkle: (
+      <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="#FA50B5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+      </svg>
+    ),
+    document: (
+      <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="#FA50B5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+      </svg>
+    ),
+  };
+ 
   return (
     <section className="py-20 md:py-32 px-6">
       <div
         ref={ref}
-        className={`max-w-site mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center transition-all duration-700 ${
+        className={`max-w-site mx-auto transition-all duration-700 ${
           visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
         }`}
       >
-        <div>
-          <p className="mb-8 text-[1.4rem] font-medium text-brand leading-relaxed">
-            &ldquo;{TESTIMONIAL.quote}&rdquo;
+        <div className="max-w-[700px] mb-12">
+          <h2 className="text-2xl md:text-3xl font-semibold text-brand tracking-tight leading-snug mb-4">
+            {PROBLEM_STATEMENT.heading}
+          </h2>
+          <p className="text-xs font-mono uppercase tracking-widest text-brand-muted">
+            {PROBLEM_STATEMENT.subheading}
           </p>
-          <p className="font-semibold text-brand">{TESTIMONIAL.name}</p>
-          <p className="text-sm text-brand-muted">{TESTIMONIAL.title}</p>
         </div>
-        <div className="rounded-card overflow-hidden border border-brand-border shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-          <img
-            src={TESTIMONIAL.image}
-            alt={`${TESTIMONIAL.name} portrait`}
-            className="w-full h-auto object-cover aspect-[4/3]"
-            loading="lazy"
-          />
+ 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+          {PROBLEM_STATEMENT.cards.map((card, i) => (
+            <div
+              key={i}
+              className="p-8 rounded-card border border-brand-border bg-white hover:shadow-[0_4px_20px_rgba(0,0,0,0.04)] transition-shadow duration-300"
+            >
+              <div className="mb-4">{icons[card.icon]}</div>
+              <h3 className="text-lg font-semibold text-brand mb-2 leading-snug">
+                {card.title}
+              </h3>
+              <p className="text-sm text-brand-muted leading-relaxed">
+                {card.body}
+              </p>
+            </div>
+          ))}
         </div>
+ 
+        <p className="text-xl md:text-2xl font-semibold text-brand tracking-tight leading-snug max-w-[700px]">
+          {PROBLEM_STATEMENT.closing}
+        </p>
       </div>
     </section>
   );
@@ -537,7 +577,7 @@ export default function Home() {
       <Hero />
       <LogoTicker />
       <Services />
-      <Testimonial />
+      <ProblemStatement />
       <Philosophy />
       <Process />
       <Impact />
