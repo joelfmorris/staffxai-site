@@ -34,20 +34,12 @@ async function strapiGet<T>(path: string): Promise<T | null> {
     headers["Authorization"] = `Bearer ${STRAPI_API_TOKEN}`;
   }
 
-  console.log('[STRAPI DEBUG] URL:', STRAPI_URL || 'using fallback');
-  console.log('[STRAPI DEBUG] Token present:', process.env.STRAPI_API_TOKEN ? 'YES, length ' + process.env.STRAPI_API_TOKEN.length : 'NO TOKEN');
-
   try {
     const res = await fetch(`${STRAPI_URL}${path}`, {
       headers,
       next: { revalidate: 60 },
     });
-    console.log('[STRAPI DEBUG] Response status:', res.status);
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.log('[STRAPI DEBUG] Error body:', errorText);
-      return null;
-    }
+    if (!res.ok) return null;
     return res.json() as Promise<T>;
   } catch {
     return null;
