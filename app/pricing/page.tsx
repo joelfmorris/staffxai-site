@@ -95,68 +95,36 @@ export default function PricingPage() {
 
       {/* ── Pricing Cards ─────────────────────────────────── */}
       <section className="max-w-site mx-auto mb-20">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Card 1: Engine Build */}
-          <div className="p-8 rounded-card border border-brand-border bg-brand-surface flex flex-col">
-            <span className="block text-xs font-mono uppercase tracking-widest text-brand-muted mb-2">
-              One-off
-            </span>
-            <h3 className="text-xl font-semibold text-brand mb-1">Engine Build</h3>
-            <div className="mt-3 mb-2 flex items-baseline gap-1">
-              <span className="text-[2rem] font-semibold text-brand tracking-tight">From $8,000</span>
-            </div>
-            <p className="text-xs text-brand-muted font-mono mb-6">AUD, one-off</p>
-            <p className="text-sm text-brand-muted leading-relaxed mb-6 flex-1">
-              The foundation. We learn your business, build your brand memory, deploy and configure the agents, and wire everything into your existing systems.
-            </p>
-            <ul className="flex flex-col gap-3 mb-8">
-              {[
-                "Structured business interview and context capture",
-                "Brand memory file (the persistent intelligence layer)",
-                "Agent deployment and system integration",
-                "Initial content queue seeding",
-                "Testing and go-live",
-              ].map((f, i) => (
-                <li key={i} className="flex items-start gap-2.5 text-sm text-brand-muted">
-                  <svg className="w-4 h-4 mt-0.5 flex-shrink-0" viewBox="0 0 16 16" fill="none">
-                    <path d="M3 8.5L6.5 12L13 4" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  {f}
-                </li>
-              ))}
-            </ul>
-            <p className="text-xs text-brand-muted font-mono mb-6">Timeline: 2–3 weeks</p>
-            <Link
-              href="/book"
-              className="block text-center px-6 py-3 rounded-xl text-sm font-medium bg-transparent text-brand border border-brand-border hover:bg-white transition-all duration-200"
-            >
-              Book a Call
-            </Link>
-          </div>
-
-          {/* Card 2: Done-With-You */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Card A: Done-With-You */}
           <div className="relative p-8 rounded-card border border-brand bg-white shadow-[0_8px_30px_rgba(0,0,0,0.08)] flex flex-col">
             <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-pill text-xs font-medium font-mono tracking-wide bg-brand-pop text-white">
-              Standard
+              Most popular
             </span>
             <span className="block text-xs font-mono uppercase tracking-widest text-brand-muted mb-2">
               Monthly
             </span>
             <h3 className="text-xl font-semibold text-brand mb-1">Done-With-You</h3>
-            <div className="mt-3 mb-2 flex items-baseline gap-1">
-              <span className="text-[2rem] font-semibold text-brand tracking-tight">From $3,000</span>
+            <div className="mt-4 mb-1 flex items-baseline gap-0.5">
+              <span
+                className="font-semibold text-brand tracking-tight"
+                style={{ fontSize: "clamp(2.5rem, 3vw, 3.25rem)", letterSpacing: "-0.03em" }}
+              >
+                $3,000
+              </span>
+              <sup className="text-lg font-semibold text-brand-muted ml-0.5">*</sup>
             </div>
-            <p className="text-xs text-brand-muted font-mono mb-6">AUD/month</p>
+            <p className="text-xs text-brand-muted font-mono mb-6">AUD / month</p>
             <p className="text-sm text-brand-muted leading-relaxed mb-6 flex-1">
-              We build and manage the engine. We train your person on routine operations. You have oversight; we handle the technical management and optimisation.
+              The engine, built and managed. Your team trained on the routine.
             </p>
             <ul className="flex flex-col gap-3 mb-8">
               {[
                 "Daily autonomous content and outbound execution",
-                "Monthly performance monitoring and prompt tuning",
+                "Monthly performance monitoring and tuning",
                 "Content queue management and keyword research",
                 "Quarterly context review and objectives reset",
-                "Slack/email support",
+                "Slack and email support",
               ].map((f, i) => (
                 <li key={i} className="flex items-start gap-2.5 text-sm text-brand-muted">
                   <svg className="w-4 h-4 mt-0.5 flex-shrink-0" viewBox="0 0 16 16" fill="none">
@@ -174,26 +142,34 @@ export default function PricingPage() {
             </Link>
           </div>
 
-          {/* Card 3: Done-For-You */}
-          <div className="p-8 rounded-card border border-brand-border bg-brand-surface flex flex-col">
+          {/* Card B: Done-For-You */}
+          <div className="relative p-8 rounded-card border border-brand-border bg-brand-surface flex flex-col">
+            <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-pill text-xs font-medium font-mono tracking-wide bg-brand text-white">
+              Premium
+            </span>
             <span className="block text-xs font-mono uppercase tracking-widest text-brand-muted mb-2">
               Monthly
             </span>
             <h3 className="text-xl font-semibold text-brand mb-1">Done-For-You</h3>
-            <div className="mt-3 mb-2 flex items-baseline gap-1">
-              <span className="text-[2rem] font-semibold text-brand tracking-tight">From $5,000</span>
+            <div className="mt-4 mb-1 flex items-baseline gap-0.5">
+              <span
+                className="font-semibold text-brand tracking-tight"
+                style={{ fontSize: "clamp(2.5rem, 3vw, 3.25rem)", letterSpacing: "-0.03em" }}
+              >
+                $5,000
+              </span>
+              <sup className="text-lg font-semibold text-brand-muted ml-0.5">*</sup>
             </div>
-            <p className="text-xs text-brand-muted font-mono mb-6">AUD/month</p>
+            <p className="text-xs text-brand-muted font-mono mb-6">AUD / month</p>
             <p className="text-sm text-brand-muted leading-relaxed mb-6 flex-1">
-              We run everything end to end. You receive the output and the reporting. No operational load on your team.
+              Everything run end to end. You receive the output and the reporting.
             </p>
             <ul className="flex flex-col gap-3 mb-8">
               {[
-                "Everything in Done-With-You",
-                "Full operational management — no time required from your team",
+                "Everything in Done-With-You, plus:",
+                "Full operational management — zero time required from your team",
                 "Weekly performance reporting",
                 "Priority support and faster iteration cycles",
-                "Expanded agent capabilities as they become available",
               ].map((f, i) => (
                 <li key={i} className="flex items-start gap-2.5 text-sm text-brand-muted">
                   <svg className="w-4 h-4 mt-0.5 flex-shrink-0" viewBox="0 0 16 16" fill="none">
@@ -210,6 +186,19 @@ export default function PricingPage() {
               Book a Call
             </Link>
           </div>
+        </div>
+
+        {/* Asterisk footnote */}
+        <p className="mt-6 text-sm text-brand-muted leading-relaxed">
+          *Plus a one-off Engine Build from $8,000 — business context capture, agent deployment, initial content queue, and full system integration. 2–3 weeks. Founding-client rates, time-limited.
+        </p>
+
+        {/* What the Engine Build includes */}
+        <div className="mt-8 p-8 rounded-card border border-brand-border bg-brand-surface">
+          <h3 className="font-semibold text-brand mb-3">What the Engine Build includes</h3>
+          <p className="text-sm text-brand-muted leading-relaxed">
+            Every engagement starts with the build: a structured business interview, your brand memory file (the persistent intelligence layer every agent loads), agent deployment wired into your existing systems, initial content queue seeding, and testing through to go-live.
+          </p>
         </div>
       </section>
 

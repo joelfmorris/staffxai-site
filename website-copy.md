@@ -174,6 +174,10 @@ In 2025, he started building autonomous agents. Not as a side project — as a s
 
 StaffxAI exists because the technology works — but almost nobody implements it properly. The gap isn't AI capability. It's the operational discipline to make it run in production and the marketing judgment to know what's worth building.
 
+### I'm a marketer, not a coder.
+
+Everything you see here — the daily publishing, the outbound engine, the multi-model system — was built by a marketer using AI tools, not a software engineer. Could you build it yourself? Honestly, yes — if you want to invest a few hundred hours learning the architecture, the failure modes, and the maintenance. That's the point. The hard part was never the code. It's knowing what's worth building, what good marketing output looks like, and how to keep the whole thing running in production. That's 20+ years of marketing judgment — and that's what you're actually hiring.
+
 ---
 
 ## Final CTA Section
@@ -298,45 +302,39 @@ What you're comparing us to.
 
 ## Pricing Cards
 
-### Card 1: Engine Build (one-off)
+Two primary cards side by side. Engine Build is no longer a card — it becomes a footnote + detail block below the cards.
 
-**From $8,000 AUD**
+### Card A: Done-With-You (Most popular)
 
-The foundation. We learn your business, build your brand memory, deploy and configure the agents, and wire everything into your existing systems.
+**$3,000*/month AUD**
 
-Includes:
-- Structured business interview and context capture
-- Brand memory file (the persistent intelligence layer)
-- Agent deployment and system integration
-- Initial content queue seeding
-- Testing and go-live
-
-Timeline: 2–3 weeks.
-
-### Card 2: Done-With-You (standard monthly)
-
-**From $3,000/month AUD**
-
-We build and manage the engine. We train your person on routine operations. You have oversight; we handle the technical management and optimisation.
+The engine, built and managed. Your team trained on the routine.
 
 Includes:
 - Daily autonomous content and outbound execution
-- Monthly performance monitoring and prompt tuning
+- Monthly performance monitoring and tuning
 - Content queue management and keyword research
 - Quarterly context review and objectives reset
-- Slack/email support
+- Slack and email support
 
-### Card 3: Done-For-You (premium monthly)
+### Card B: Done-For-You (Premium)
 
-**From $5,000/month AUD**
+**$5,000*/month AUD**
 
-We run everything end to end. You receive the output and the reporting. No operational load on your team.
+Everything run end to end. You receive the output and the reporting.
 
 Everything in Done-With-You, plus:
-- Full operational management — no time required from your team
+- Full operational management — zero time required from your team
 - Weekly performance reporting
 - Priority support and faster iteration cycles
-- Expanded agent capabilities as they become available
+
+### Asterisk footnote (below both cards)
+
+*Plus a one-off Engine Build from $8,000 — business context capture, agent deployment, initial content queue, and full system integration. 2–3 weeks. Founding-client rates, time-limited.
+
+### What the Engine Build includes (below footnote)
+
+Every engagement starts with the build: a structured business interview, your brand memory file (the persistent intelligence layer every agent loads), agent deployment wired into your existing systems, initial content queue seeding, and testing through to go-live.
 
 ---
 

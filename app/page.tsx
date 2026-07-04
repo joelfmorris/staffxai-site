@@ -441,6 +441,13 @@ export default async function HomePage() {
             <p className="text-brand-muted leading-relaxed">
               StaffxAI exists because the technology works — but almost nobody implements it properly. The gap isn&rsquo;t AI capability. It&rsquo;s the operational discipline to make it run in production and the marketing judgment to know what&rsquo;s worth building.
             </p>
+
+            <h3 className="mt-10 mb-3 text-lg font-semibold text-brand tracking-tight leading-snug">
+              I&rsquo;m a marketer, not a coder.
+            </h3>
+            <p className="text-brand-muted leading-relaxed">
+              Everything you see here — the daily publishing, the outbound engine, the multi-model system — was built by a marketer using AI tools, not a software engineer. Could you build it yourself? Honestly, yes — if you want to invest a few hundred hours learning the architecture, the failure modes, and the maintenance. That&rsquo;s the point. The hard part was never the code. It&rsquo;s knowing what&rsquo;s worth building, what good marketing output looks like, and how to keep the whole thing running in production. That&rsquo;s 20+ years of marketing judgment — and that&rsquo;s what you&rsquo;re actually hiring.
+            </p>
           </div>
         </ScrollRevealSection>
       </section>
