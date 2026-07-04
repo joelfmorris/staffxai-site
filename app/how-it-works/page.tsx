@@ -4,7 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "How It Works",
   description:
-    "A coordinated system of AI agents, wired into your existing tools, running on a daily schedule. Learn how StaffxAI builds and manages autonomous marketing engines.",
+    "How StaffxAI's autonomous marketing engine works — from business context capture to daily content publishing and lead generation.",
 };
 
 export default function HowItWorksPage() {

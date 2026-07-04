@@ -32,15 +32,22 @@ export const metadata: Metadata = {
     template: "%s | StaffxAI",
   },
   description:
-    "StaffxAI builds and runs autonomous marketing engines — content, SEO, outbound, lead gen — producing the output of a full team for a fraction of the cost. Built and managed by a 20+-year marketing operator.",
-  metadataBase: new URL("https://staffxai.com.au"),
+    "StaffxAI builds and runs autonomous marketing engines — content, SEO, outbound, lead gen — producing the output of a full marketing team for a fraction of the cost. Built and managed by a 20+ year marketing operator in Melbourne, Australia.",
+  metadataBase: new URL("https://www.staffxai.com.au"),
   openGraph: {
+    title: "StaffxAI — Autonomous Marketing Engines",
+    description:
+      "StaffxAI builds and runs autonomous marketing engines — content, SEO, outbound, lead gen — producing the output of a full marketing team for a fraction of the cost. Built and managed by a 20+ year marketing operator in Melbourne, Australia.",
     siteName: "StaffxAI",
     type: "website",
     locale: "en_AU",
+    url: "https://www.staffxai.com.au",
   },
   twitter: {
     card: "summary_large_image",
+  },
+  icons: {
+    icon: "/icon.svg",
   },
 };
 

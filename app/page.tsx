@@ -4,9 +4,9 @@ import { getLatestBlogPosts, formatDate } from "@/lib/strapi";
 import { FAQSection, ScrollRevealSection } from "./home-client";
 
 export const metadata: Metadata = {
-  title: "StaffxAI — Autonomous Marketing Engines",
+  title: { absolute: "StaffxAI — Autonomous Marketing Engines" },
   description:
-    "StaffxAI builds and runs autonomous marketing engines that produce the output of a full team — content, SEO, outbound, lead gen — for a fraction of the cost. Running 24/7. No hiring required.",
+    "Your marketing team, built by AI, managed by a 20+ year operator. Content, SEO, outbound, lead gen — running 24/7 for a fraction of the cost.",
 };
 
 export const revalidate = 60;

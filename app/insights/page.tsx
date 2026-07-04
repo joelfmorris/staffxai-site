@@ -5,7 +5,7 @@ import { getLandingPages, formatDate } from "@/lib/strapi";
 export const metadata: Metadata = {
   title: "Insights",
   description:
-    "Conversion-focused pages covering the topics our clients care about most — generated and published by the engine daily.",
+    "Conversion-focused landing pages generated daily by StaffxAI's autonomous marketing engine.",
 };
 
 export const revalidate = 60;

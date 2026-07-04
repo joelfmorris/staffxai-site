@@ -4,7 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Pricing",
   description:
-    "Simple pricing for StaffxAI autonomous marketing engines. A one-off engine build, then monthly management. All tool licences paid directly — no markup, no hidden fees.",
+    "Autonomous marketing engine pricing — from $3,000/month. The output of a full marketing team for a fraction of the cost.",
 };
 
 export default function PricingPage() {

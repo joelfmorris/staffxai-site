@@ -5,7 +5,7 @@ import { getBlogPosts, formatDate, estimateReadTime } from "@/lib/strapi";
 export const metadata: Metadata = {
   title: "Blog",
   description:
-    "Every post on this page was researched, written, and published by the autonomous marketing engine — on schedule, with no human involvement.",
+    "Content written and published daily by StaffxAI's autonomous marketing engine — SEO-optimised, brand-voiced, no human involvement.",
 };
 
 export const revalidate = 60;

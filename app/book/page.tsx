@@ -5,7 +5,7 @@ import CalendlyWidget from "./calendly-widget";
 export const metadata: Metadata = {
   title: "Book a Call",
   description:
-    "15 minutes. No pitch deck. We'll show you the autonomous marketing engine running live and talk about what it would look like for your business.",
+    "See StaffxAI's autonomous marketing engine running live. 15 minutes, no pitch deck.",
 };
 
 export default function BookPage() {
