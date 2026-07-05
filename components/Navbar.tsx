@@ -9,6 +9,7 @@ const NAV_LINKS = [
   { label: "Pricing", href: "/pricing" },
   { label: "Blog", href: "/blog" },
   { label: "Insights", href: "/insights" },
+  { label: "Live Dashboard", href: "/demo-dashboard" },
 ];
 
 export default function Navbar() {

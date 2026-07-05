@@ -355,7 +355,59 @@ Book a Call — we'll walk through what the engine would look like for your spec
 ---
 ---
 
-# PAGE 4: BLOG (auto-populated)
+# PAGE 4: LIVE DASHBOARD (/demo-dashboard)
+
+## Header
+### Live badge
+"Live" (pink pill with pulsing dot)
+
+### Headline
+The Engine — Live
+
+### Subheadline
+This is StaffxAI's own autonomous marketing engine, reporting in real time. Every client gets this same view of theirs.
+
+---
+
+## Hero Stats (4 cards)
+- Published this month — blog + landing pages combined
+- Total pieces — all time
+- Words generated — all time, formatted as "142k"
+- Keywords queued — pending count across both queues
+
+---
+
+## Recent Output
+Latest 8 pieces across blog and landing pages, sorted by publish date. Each row shows: type badge (Blog / LP), title linked to live post, date.
+
+---
+
+## Content Pipeline
+Two segmented bars: Blog posts (keyword queue) and Landing pages (page queue). Each bar shows: done (green) / pending (gray) / processing (amber) / failed (red, only if > 0), with counts.
+
+---
+
+## Engine Activity
+Table of 10 most recent agent_runs. Columns: status (✓/✗), agent name, keyword, relative time ("2h ago"). Data from Supabase agent_runs table.
+
+---
+
+## Locked Placeholder Cards (muted/dimmed)
+- "Organic search performance" — Connects to your Google Search Console
+- "Outbound performance" — Connects to your email platform
+Each shown with a lock icon. These show clients what a full deployment includes.
+
+---
+
+## CTA
+Headline: Want this running for your business?
+Body: Every client gets their own live dashboard — same engine, same visibility, same daily output. See what it would look like for yours.
+Button: Book a Call
+
+---
+---
+
+# PAGE 5: BLOG (auto-populated)
 
 ## Header
 ### Headline

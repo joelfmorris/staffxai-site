@@ -252,6 +252,12 @@ export default async function HomePage() {
             <p className="mt-4 text-brand-muted leading-relaxed">
               You can build what we&rsquo;ve built. The hard part is making it run — and keeping it running. That&rsquo;s the 20+ years of marketing and operations experience talking.
             </p>
+            <Link
+              href="/demo-dashboard"
+              className="inline-block mt-6 text-sm font-medium text-brand hover:opacity-60 transition-opacity duration-200"
+            >
+              See the engine&rsquo;s live dashboard &rarr;
+            </Link>
           </div>
         </div>
       </section>
