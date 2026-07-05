@@ -252,21 +252,28 @@ export default async function DemoDashboardPage() {
             [
               {
                 label: "Published this month",
-                value: totalThisMonth > 0 ? totalThisMonth.toString() : "—",
+                // Show real zero if fetch succeeded; "—" only if fetch failed
+                value: blogMonth !== null || lpMonth !== null
+                  ? totalThisMonth.toString()
+                  : "—",
                 sub: "blog + landing pages",
-                dim: totalThisMonth === 0,
+                dim: false,
               },
               {
                 label: "Total pieces",
-                value: totalPieces > 0 ? totalPieces.toString() : "—",
+                value: blogData !== null || lpData !== null
+                  ? totalPieces.toString()
+                  : "—",
                 sub: "all time",
-                dim: totalPieces === 0,
+                dim: false,
               },
               {
                 label: "Words generated",
-                value: totalWords > 0 ? formatK(totalWords) : "—",
+                value: blogData !== null || lpData !== null
+                  ? (totalWords > 0 ? formatK(totalWords) : "0")
+                  : "—",
                 sub: "all time",
-                dim: totalWords === 0,
+                dim: false,
               },
               {
                 label: "Keywords queued",
