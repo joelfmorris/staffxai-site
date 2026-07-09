@@ -20,7 +20,7 @@ const T = {
   border:     '#E3DDD5',
 } as const;
 
-const CLIENT_ID = 'collins-street-demo';
+const CLIENT_ID = 'cranbourne-demo';
 const SB_URL    = process.env.SUPABASE_URL;
 const SB_KEY    = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -181,7 +181,7 @@ export default async function PracticeDashboardPage() {
             className="font-display leading-tight mb-2"
             style={{ color: T.text, fontSize: 'clamp(1.8rem, 4vw, 2.8rem)' }}
           >
-            Collins Street Dental Studio
+            Cranbourne Dental Studio
           </h1>
           <p className="font-mono text-xs uppercase tracking-[0.18em]" style={{ color: T.muted }}>
             Patient Acquisition Dashboard

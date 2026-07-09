@@ -144,7 +144,7 @@ export default function SmilePage() {
             className="font-mono text-xs uppercase tracking-[0.18em] mb-6"
             style={{ color: T.accent }}
           >
-            Collins Street Dental Studio
+            Cranbourne Dental Studio
           </p>
           <h1
             className="font-display leading-[1.06] mb-6"
@@ -175,7 +175,7 @@ export default function SmilePage() {
             {[
               'AHPRA-registered practitioners',
               'Payment plans available',
-              'Melbourne CBD locals for 20 years',
+              'Serving Cranbourne, Clyde, Botanic Ridge & surrounds',
             ].map((item, i) => (
               <li key={i} className="flex items-center">
                 {i > 0 && (
@@ -426,10 +426,10 @@ export default function SmilePage() {
               className="font-mono text-[0.71rem] uppercase tracking-[0.16em] mb-3"
               style={{ color: T.accent }}
             >
-              Collins Street Dental Studio
+              Cranbourne Dental Studio
             </p>
-            <p className="text-sm mb-1" style={{ color: T.muted }}>Level X, XXX Collins Street, Melbourne VIC 3000</p>
-            <p className="text-sm"      style={{ color: T.muted }}>(03) XXXX XXXX · hello@collinsstdental.com.au</p>
+            <p className="text-sm mb-1" style={{ color: T.muted }}>XXX High Street, Cranbourne VIC 3977</p>
+            <p className="text-sm"      style={{ color: T.muted }}>(03) XXXX XXXX · hello@cranbourne dental.com.au</p>
           </div>
           <div className="sm:text-right max-w-xs">
             <p className="text-xs leading-relaxed" style={{ color: T.muted, opacity: 0.7 }}>

@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   );
 
   const { error } = await supabase.from('dental_enquiries').insert({
-    client_id: 'collins-street-demo',
+    client_id: 'cranbourne-demo',
     source: 'web',
     status: 'new',
     first_name: firstName,
