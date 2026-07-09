@@ -98,6 +98,7 @@ export default function SmilePage() {
       treatmentInterest: fd.get('treatmentInterest') as string,
       timeline:          fd.get('timeline') as string,
       priorConsult:      fd.get('prior_consult') === 'true',
+      consentAt:         new Date().toISOString(),
     };
     setFirstName(body.firstName);
     try {
@@ -404,6 +405,10 @@ export default function SmilePage() {
 
               <p className="text-xs text-center" style={{ color: T.muted, opacity: 0.7 }}>
                 No commitment required. We&rsquo;ll be in touch within 1 business day.
+              </p>
+
+              <p className="text-xs text-center leading-relaxed" style={{ color: T.muted, opacity: 0.6 }}>
+                By submitting, you agree Cranbourne Dental Studio may contact you by phone and SMS about your enquiry.
               </p>
             </form>
           )}
