@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 export async function POST(req: NextRequest) {
-  const { firstName, mobile, email, treatmentInterest, timeline } = await req.json();
+  const { firstName, mobile, email, treatmentInterest, timeline, priorConsult } = await req.json();
 
   if (!firstName || !mobile || !email) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
     email,
     treatment_interest: treatmentInterest,
     timeline,
+    prior_consult: typeof priorConsult === 'boolean' ? priorConsult : null,
   });
 
   if (error) {

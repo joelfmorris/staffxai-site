@@ -75,10 +75,11 @@ function SelectField({ id, label, children }: { id: string; label: string; child
 }
 
 export default function SmilePage() {
-  const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess]       = useState(false);
+  const [submitting, setSubmitting]   = useState(false);
+  const [success, setSuccess]         = useState(false);
   const [submitError, setSubmitError] = useState(false);
-  const [firstName, setFirstName]   = useState('');
+  const [firstName, setFirstName]     = useState('');
+  const [priorConsult, setPriorConsult] = useState<string>('');
   const formRef = useRef<HTMLElement>(null);
 
   function scrollToForm() {
@@ -96,6 +97,7 @@ export default function SmilePage() {
       email:             fd.get('email') as string,
       treatmentInterest: fd.get('treatmentInterest') as string,
       timeline:          fd.get('timeline') as string,
+      priorConsult:      fd.get('prior_consult') === 'true',
     };
     setFirstName(body.firstName);
     try {
@@ -353,6 +355,37 @@ export default function SmilePage() {
                 <option value="1-3-months">1–3 months</option>
                 <option value="researching">Just researching</option>
               </SelectField>
+
+              {/* Prior consult radio */}
+              <div>
+                <p className="block text-sm font-medium mb-3" style={{ color: T.text }}>
+                  Have you had a consultation or quote for this before?
+                </p>
+                <div className="flex gap-3">
+                  {([{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }] as const).map(opt => (
+                    <label
+                      key={opt.value}
+                      className="flex-1 flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl border cursor-pointer transition-colors"
+                      style={{
+                        borderColor: priorConsult === opt.value ? T.accent : T.border,
+                        background:  priorConsult === opt.value ? T.accentPale : T.ground,
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="prior_consult"
+                        value={opt.value}
+                        required
+                        className="sr-only"
+                        onChange={() => setPriorConsult(opt.value)}
+                      />
+                      <span className="text-sm font-medium" style={{ color: T.text }}>
+                        {opt.label}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
 
               {submitError && (
                 <p className="text-sm" style={{ color: '#B94A3B' }}>

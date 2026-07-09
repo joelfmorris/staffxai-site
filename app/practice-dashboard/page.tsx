@@ -31,6 +31,7 @@ interface Enquiry {
   treatment_interest?: string | null;
   status:              string;
   treatment_value?:    number | null;
+  prior_consult?:      boolean | null;
   created_at:          string;
 }
 
@@ -433,12 +434,22 @@ export default async function PracticeDashboardPage() {
                     <span className="text-sm hidden sm:block truncate pr-4" style={{ color: T.muted }}>
                       {treat}
                     </span>
-                    <span
-                      className="text-xs font-mono px-2.5 py-1 rounded-pill whitespace-nowrap"
-                      style={{ background: badge.bg, color: badge.fg }}
-                    >
-                      {badge.label}
-                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      <span
+                        className="text-xs font-mono px-2.5 py-1 rounded-pill whitespace-nowrap"
+                        style={{ background: badge.bg, color: badge.fg }}
+                      >
+                        {badge.label}
+                      </span>
+                      {e.prior_consult && (
+                        <span
+                          className="text-xs font-mono px-2.5 py-1 rounded-pill whitespace-nowrap"
+                          style={{ background: '#FEF3C7', color: '#92400E' }}
+                        >
+                          Prior Quote
+                        </span>
+                      )}
+                    </div>
                     <span
                       className="text-xs font-mono sm:text-right whitespace-nowrap"
                       style={{ color: T.muted }}
