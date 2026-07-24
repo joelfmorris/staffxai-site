@@ -27,13 +27,24 @@ function verifyRetellSignature(rawBody: string, signature: string): boolean {
     console.warn('[retell/availability] RETELL_API_KEY not set — skipping signature verification');
     return true;
   }
-  if (!signature) return false;
+
+  const match = signature.match(/^v=(\d+),d=(.*)$/);
+  if (!match) return false;
+
+  const [, timestamp, digest] = match;
+
+  // Replay protection — reject signatures older or newer than 5 minutes
+  if (Math.abs(Date.now() - Number(timestamp)) > 5 * 60 * 1000) return false;
+
+  const expected = createHmac('sha256', apiKey)
+    .update(rawBody + timestamp)
+    .digest('hex');
+
   try {
-    const expected = createHmac('sha256', apiKey).update(rawBody).digest('hex');
     const eBuf = Buffer.from(expected, 'hex');
-    const sBuf = Buffer.from(signature, 'hex');
-    if (eBuf.length !== sBuf.length) return false;
-    return timingSafeEqual(eBuf, sBuf);
+    const dBuf = Buffer.from(digest, 'hex');
+    if (eBuf.length !== dBuf.length) return false;
+    return timingSafeEqual(eBuf, dBuf);
   } catch {
     return false;
   }
