@@ -214,7 +214,12 @@ async function actionSendDeposit(db: SupabaseClient, lead: Lead): Promise<object
     const minsAgo = (Date.now() - new Date(lead.deposit_sent_at).getTime()) / 60_000;
     if (minsAgo < DEPOSIT_DEDUP_MINUTES) {
       console.log(`[retell/action] send_deposit idempotency hit — sent ${minsAgo.toFixed(1)}m ago`);
-      return { status: 'already_sent' };
+      return {
+        status: 'already_sent',
+        // CRITICAL: do NOT say "locked in", "confirmed", or "booked" — deposit not yet paid.
+        // Do NOT claim the text has definitely arrived or explain why it might be delayed.
+        speech: `I sent that link through a moment ago — it should be on its way to you now. Once you tap through and pay the fifty, that spot's yours. If it hasn't come through, let me know and I'll have someone from the practice follow up with you shortly.`,
+      };
     }
   }
 
@@ -228,10 +233,11 @@ async function actionSendDeposit(db: SupabaseClient, lead: Lead): Promise<object
     return { status: 'skipped', reason: `dnc: ${dncReason}` };
   }
 
+  // SMS copy: "hold" not "book/confirm/lock in" — slot is held on payment, not now
   const text =
-    `Here's your secure link to hold your consultation: ${depositLink}. ` +
-    `It's $50 and fully refundable — deducted from any treatment you go ahead ` +
-    `with. Once paid, I'll send your booking link straight away. — Maya`;
+    `Hi ${lead.first_name}, here's your secure link to hold your consultation spot: ${depositLink}. ` +
+    `It's a $50 fully refundable deposit — taken off any treatment you go ahead with. ` +
+    `Once you've paid, we'll be in touch to sort the details. — Maya`;
 
   await sendSMS(lead.mobile, text);
 
@@ -240,7 +246,12 @@ async function actionSendDeposit(db: SupabaseClient, lead: Lead): Promise<object
     deposit_sent_at: now(),
   });
 
-  return { status: 'sent' };
+  return {
+    status: 'sent',
+    // CRITICAL: do NOT say "locked in", "confirmed", or "booked" — deposit not yet paid.
+    // Do NOT claim the text has definitely arrived or explain why it might be delayed.
+    speech: `I've just sent the link through to the number you're on now. Once you tap through and pay the fifty dollars, that spot's yours. If it hasn't come through in the next minute or so, just let me know and I'll get someone from the practice to follow up with you.`,
+  };
 }
 
 // ── Action: log_capture ───────────────────────────────────────
