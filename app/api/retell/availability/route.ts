@@ -84,13 +84,27 @@ function ordinal(n: number): string {
 
 function formatSlotHuman(iso: string): string {
   const d = new Date(iso);
+
   const weekday = d.toLocaleDateString('en-AU', { weekday: 'long', timeZone: TZ });
   const day = parseInt(d.toLocaleDateString('en-AU', { day: 'numeric', timeZone: TZ }), 10);
-  // "10:00 am" → "10am";  "2:30 pm" → "2:30pm"
-  const rawTime = d.toLocaleTimeString('en-AU', {
-    hour: 'numeric', minute: '2-digit', hour12: true, timeZone: TZ,
-  });
-  const time = rawTime.toLowerCase().replace(':00 ', ' ').replace(' ', '');
+
+  // Use formatToParts so we get structured values regardless of platform ICU quirks
+  // (toLocaleTimeString output varies on Windows — narrow no-break spaces, missing suffix, etc.)
+  const parts = new Intl.DateTimeFormat('en-AU', {
+    hour: 'numeric', minute: '2-digit', hour12: false, timeZone: TZ,
+  }).formatToParts(d);
+
+  const hour24 = parseInt(parts.find(p => p.type === 'hour')?.value  ?? '0',  10);
+  const minute  = parseInt(parts.find(p => p.type === 'minute')?.value ?? '0', 10);
+
+  const ampm  = hour24 < 12 ? 'am' : 'pm';
+  const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;  // 0 → 12 (midnight/noon)
+
+  // Drop :00 for on-the-hour times; always append am/pm
+  const time = minute === 0
+    ? `${hour12}${ampm}`
+    : `${hour12}:${minute.toString().padStart(2, '0')}${ampm}`;
+
   return `${weekday} the ${ordinal(day)} at ${time}`;
 }
 
