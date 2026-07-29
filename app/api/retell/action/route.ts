@@ -15,6 +15,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createHmac, timingSafeEqual } from 'crypto';
 import twilio from 'twilio';
+import { waitUntil } from '@vercel/functions';
 
 // ── Supabase ──────────────────────────────────────────────────
 
@@ -201,15 +202,24 @@ async function logRun(
 }
 
 // ── Action: send_deposit ──────────────────────────────────────
+//
+// Split into two phases so Retell gets a response immediately:
+//   1. sendDepositPrecheck  — runs synchronously before the response is sent.
+//      Returns a result object if the request should short-circuit (unsubscribed,
+//      idempotency hit), or null to proceed.
+//   2. sendDepositBackground — runs via waitUntil after 200 is returned.
+//      Handles DNC check, Twilio send, Supabase update, and agent_runs logging.
+//
+// The idempotency guard MUST stay in the pre-check so retries can't double-send
+// even though the heavy work happens post-response.
 
 const DEPOSIT_DEDUP_MINUTES = 10;
 
-async function actionSendDeposit(db: SupabaseClient, lead: Lead): Promise<object> {
+function sendDepositPrecheck(lead: Lead): object | null {
   if (lead.status === 'unsubscribed') {
     return { status: 'skipped', reason: 'unsubscribed' };
   }
 
-  // Idempotency guard — don't resend within 10 minutes
   if (lead.deposit_sent_at) {
     const minsAgo = (Date.now() - new Date(lead.deposit_sent_at).getTime()) / 60_000;
     if (minsAgo < DEPOSIT_DEDUP_MINUTES) {
@@ -223,14 +233,22 @@ async function actionSendDeposit(db: SupabaseClient, lead: Lead): Promise<object
     }
   }
 
+  return null; // proceed to background work
+}
+
+async function sendDepositBackground(db: SupabaseClient, lead: Lead, t0: number) {
   const depositLink = process.env.STRIPE_DEPOSIT_LINK;
   if (isMissing(depositLink)) {
-    throw new Error('STRIPE_DEPOSIT_LINK not configured');
+    console.error('[retell/action] STRIPE_DEPOSIT_LINK not configured — deposit SMS not sent');
+    await logRun(db, lead, 'send_deposit', {}, { status: 'error', error: 'STRIPE_DEPOSIT_LINK not configured' }, Date.now() - t0);
+    return;
   }
 
   const dncReason = await checkDNC(db, lead.mobile);
   if (dncReason) {
-    return { status: 'skipped', reason: `dnc: ${dncReason}` };
+    console.log(`[retell/action] send_deposit skipped — DNC (${dncReason})`);
+    await logRun(db, lead, 'send_deposit', {}, { status: 'skipped', reason: `dnc: ${dncReason}` }, Date.now() - t0);
+    return;
   }
 
   // SMS copy: "hold" not "book/confirm/lock in" — slot is held on payment, not now
@@ -239,19 +257,18 @@ async function actionSendDeposit(db: SupabaseClient, lead: Lead): Promise<object
     `It's a $50 fully refundable deposit — taken off any treatment you go ahead with. ` +
     `Once you've paid, we'll be in touch to sort the details. — Maya`;
 
-  await sendSMS(lead.mobile, text);
-
-  await updateLead(db, lead.id, {
-    status:          'deposit_sent',
-    deposit_sent_at: now(),
-  });
-
-  return {
-    status: 'sent',
-    // CRITICAL: do NOT say "locked in", "confirmed", or "booked" — deposit not yet paid.
-    // Do NOT claim the text has definitely arrived or explain why it might be delayed.
-    speech: `I've just sent the link through to the number you're on now. Once you tap through and pay the fifty dollars, that spot's yours. If it hasn't come through in the next minute or so, just let me know and I'll get someone from the practice to follow up with you.`,
-  };
+  try {
+    await sendSMS(lead.mobile, text);
+    await updateLead(db, lead.id, {
+      status:          'deposit_sent',
+      deposit_sent_at: now(),
+    });
+    await logRun(db, lead, 'send_deposit', {}, { status: 'sent' }, Date.now() - t0);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[retell/action] send_deposit background failed:', message);
+    await logRun(db, lead, 'send_deposit', {}, { status: 'error', error: message }, Date.now() - t0).catch(() => {});
+  }
 }
 
 // ── Action: log_capture ───────────────────────────────────────
@@ -389,9 +406,22 @@ export async function POST(req: NextRequest) {
     let result: object;
 
     switch (action) {
-      case 'send_deposit':
-        result = await actionSendDeposit(db, lead);
-        break;
+      case 'send_deposit': {
+        // Pre-check runs synchronously — idempotency guard must fire before response
+        const early = sendDepositPrecheck(lead);
+        if (early) {
+          await logRun(db, lead, action, { lead_id: leadId }, early, Date.now() - t0);
+          return NextResponse.json(early);
+        }
+        // Schedule background work and return immediately so Retell isn't blocked
+        waitUntil(sendDepositBackground(db, lead, t0));
+        return NextResponse.json({
+          status: 'sent',
+          // CRITICAL: do NOT say "locked in", "confirmed", or "booked" — deposit not yet paid.
+          // Do NOT claim the text has definitely arrived or explain why it might be delayed.
+          speech: `I've just sent the link through to the number you're on now. Once you tap through and pay the fifty dollars, that spot's yours. If it hasn't come through in the next minute or so, just let me know and I'll get someone from the practice to follow up with you.`,
+        });
+      }
 
       case 'log_capture':
         result = await actionLogCapture(db, lead, body);
