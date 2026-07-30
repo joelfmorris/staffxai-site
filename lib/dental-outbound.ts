@@ -55,6 +55,8 @@ export async function triggerOutboundCall(
   const norm = normaliseAU(lead.mobile);
   const ts   = new Date().toISOString();
 
+  console.log(`[dental-outbound] start — lead_id=${lead.id} mobile=${norm}`);
+
   async function logRun(status: 'success' | 'failed' | 'skipped', notes: string) {
     try {
       const { error } = await supabase.from('agent_runs').insert({
@@ -90,12 +92,15 @@ export async function triggerOutboundCall(
   }
 
   // ── DNC check ──────────────────────────────────────────────
+  console.log(`[dental-outbound] checking DNC for ${norm}`);
   try {
-    const { data: dnc } = await supabase
+    const { data: dnc, error: dncErr } = await supabase
       .from('do_not_contact')
       .select('reason')
       .eq('mobile', norm)
       .maybeSingle();
+
+    if (dncErr) console.warn('[dental-outbound] DNC query error:', dncErr.message);
 
     if (dnc) {
       const reason = (dnc as { reason: string }).reason;
@@ -104,16 +109,19 @@ export async function triggerOutboundCall(
       await logRun('skipped', `DNC: ${reason}`);
       return { outcome: 'suppressed', notes: `DNC: ${reason}` };
     }
+
+    console.log('[dental-outbound] DNC clear');
   } catch (e: unknown) {
     // Fail open — a DNC lookup error should not block the call
-    console.warn('[dental-outbound] DNC check failed — defaulting to allow:', e instanceof Error ? e.message : e);
+    console.warn('[dental-outbound] DNC check threw — defaulting to allow:', e instanceof Error ? e.message : e);
   }
 
   // ── Calling hours check ────────────────────────────────────
+  const hour = melbourneHour();
+  console.log(`[dental-outbound] Melbourne hour=${hour} forceHours=${!!opts.forceHours} window=${CALL_HOUR_START}–${CALL_HOUR_END}`);
   if (!opts.forceHours) {
-    const hour = melbourneHour();
     if (hour < CALL_HOUR_START || hour >= CALL_HOUR_END) {
-      console.log(`[dental-outbound] call deferred — outside hours (Melbourne hour: ${hour})`);
+      console.log(`[dental-outbound] call deferred — outside hours (hour=${hour})`);
       await updateLead({ status: 'call_pending' });
       await logRun('skipped', `Outside calling hours (hour=${hour} Melbourne)`);
       return { outcome: 'call_pending', notes: `Outside hours (hour=${hour})` };
@@ -125,6 +133,7 @@ export async function triggerOutboundCall(
   const fromNum = process.env.RETELL_FROM_NUMBER;
   const agentId = process.env.RETELL_AGENT_ID;
 
+  console.log(`[dental-outbound] env check — RETELL_API_KEY=${!!apiKey} RETELL_FROM_NUMBER=${!!fromNum} RETELL_AGENT_ID=${!!agentId}`);
   if (!apiKey || !fromNum || !agentId) {
     const notes = 'RETELL_API_KEY / RETELL_FROM_NUMBER / RETELL_AGENT_ID not configured';
     console.warn(`[dental-outbound] ${notes}`);
@@ -143,6 +152,7 @@ export async function triggerOutboundCall(
   };
 
   try {
+    console.log(`[dental-outbound] → Retell create-phone-call from=${fromNum} to=${norm} agent=${agentId}`);
     const res = await fetch('https://api.retellai.com/v2/create-phone-call', {
       method:  'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
@@ -154,17 +164,19 @@ export async function triggerOutboundCall(
       }),
     });
 
+    console.log(`[dental-outbound] ← Retell response status=${res.status}`);
+
     if (!res.ok) {
       const text = await res.text().catch(() => '');
       const notes = `Retell ${res.status}: ${text.slice(0, 200)}`;
-      console.error(`[dental-outbound] ${notes}`);
+      console.error(`[dental-outbound] Retell error — ${notes}`);
       await logRun('failed', notes);
       return { outcome: 'failed', notes };
     }
 
     const result = await res.json().catch(() => ({})) as { call_id?: string };
     const callId = result.call_id ?? '';
-    console.log(`[dental-outbound] call initiated — call_id: ${callId || 'unknown'}`);
+    console.log(`[dental-outbound] call initiated — call_id=${callId || 'unknown'}`);
 
     // Store call_id and advance status on the lead
     await updateLead({ status: 'calling', retell_call_id: callId || null });

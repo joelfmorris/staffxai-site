@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { waitUntil } from '@vercel/functions';
 import { makeSupabase, triggerOutboundCall } from '@/lib/dental-outbound';
 
 export async function POST(req: NextRequest) {
@@ -32,16 +33,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Database error' }, { status: 500 });
   }
 
-  // Trigger outbound call — never blocks or fails the form submission
-  triggerOutboundCall(supabase, {
-    id:                 (lead as { id: string }).id,
-    mobile,
-    first_name:         firstName,
-    treatment_interest: treatmentInterest,
-    timeline,
-    email,
-  }).catch((e: unknown) =>
-    console.error('[dental-enquiry] triggerOutboundCall threw:', e instanceof Error ? e.message : e),
+  // Keep the function alive after response so triggerOutboundCall can complete
+  waitUntil(
+    triggerOutboundCall(supabase, {
+      id:                 (lead as { id: string }).id,
+      mobile,
+      first_name:         firstName,
+      treatment_interest: treatmentInterest,
+      timeline,
+      email,
+    }).catch((e: unknown) =>
+      console.error('[dental-enquiry] triggerOutboundCall threw:', e instanceof Error ? e.message : e),
+    ),
   );
 
   return NextResponse.json({ success: true });
