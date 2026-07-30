@@ -61,16 +61,26 @@ async function sbGet<T>(table: string, params = ''): Promise<T | null> {
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
-function relativeTime(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60_000);
-  if (mins < 2)  return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24)  return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  if (days === 1) return 'yesterday';
-  return `${days}d ago`;
+function fmtMelbourne(isoString: string): string {
+  const d = new Date(isoString);
+  const parts = new Intl.DateTimeFormat('en-AU', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'Australia/Melbourne',
+  }).formatToParts(d);
+  const get = (type: string) => parts.find(p => p.type === type)?.value ?? '';
+  const hour24 = parseInt(get('hour'), 10);
+  const minute = parseInt(get('minute'), 10);
+  const ampm   = hour24 < 12 ? 'am' : 'pm';
+  const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
+  const time   = minute === 0
+    ? `${hour12}${ampm}`
+    : `${hour12}:${minute.toString().padStart(2, '0')}${ampm}`;
+  return `${get('weekday')} ${get('day')} ${get('month')}, ${time}`;
 }
 
 function formatAUD(n: number): string {
@@ -454,7 +464,7 @@ export default async function PracticeDashboardPage() {
                       className="text-xs font-mono sm:text-right whitespace-nowrap"
                       style={{ color: T.muted }}
                     >
-                      {e.created_at ? relativeTime(e.created_at) : '—'}
+                      {e.created_at ? fmtMelbourne(e.created_at) : '—'}
                     </span>
                   </div>
                 );
@@ -507,7 +517,7 @@ export default async function PracticeDashboardPage() {
                       className="flex-shrink-0 text-xs font-mono whitespace-nowrap"
                       style={{ color: T.muted }}
                     >
-                      {run.created_at ? relativeTime(run.created_at) : '—'}
+                      {run.created_at ? fmtMelbourne(run.created_at) : '—'}
                     </span>
                   </div>
                 );
