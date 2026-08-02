@@ -21,14 +21,81 @@ export function normaliseAU(mobile: string): string {
   return '+61' + digits;
 }
 
-// Uses Intl so AEST/AEDT is handled correctly by the system's timezone data
-function melbourneHour(): number {
+// Validates an Australian mobile — must normalise to +614xxxxxxxx (9 digits after +614)
+export function isAUMobile(mobile: string): boolean {
+  return /^\+614\d{8}$/.test(normaliseAU(mobile));
+}
+
+// ── Melbourne time helpers ────────────────────────────────────
+
+function melbourneHourOf(dt: Date): number {
   return parseInt(
     new Intl.DateTimeFormat('en-AU', { hour: 'numeric', hour12: false, timeZone: 'Australia/Melbourne' })
-      .formatToParts(new Date())
-      .find(p => p.type === 'hour')?.value ?? '0',
+      .formatToParts(dt).find(p => p.type === 'hour')?.value ?? '0',
     10,
   );
+}
+
+// Uses Intl so AEST/AEDT is handled correctly by the system's timezone data
+function melbourneHour(): number {
+  return melbourneHourOf(new Date());
+}
+
+export function isMelbourneBusinessHours(): boolean {
+  const h = melbourneHour();
+  return h >= 9 && h < 19;
+}
+
+// Constructs the UTC Date for 09:00 Melbourne time on the given YYYY-MM-DD key.
+// Tries AEDT (+11) then AEST (+10) and picks whichever actually lands on Melbourne hour 9.
+function nineAmMelbourne(dateKey: string): Date {
+  for (const offset of ['+11:00', '+10:00']) {
+    const candidate = new Date(`${dateKey}T09:00:00${offset}`);
+    if (melbourneHourOf(candidate) === 9) return candidate;
+  }
+  return new Date(`${dateKey}T09:00:00+10:00`);
+}
+
+// Clamps dt into the 9am–7pm Melbourne window.
+// Before 9am → same day 9am Melbourne. After 7pm → next day 9am Melbourne.
+export function clampToMelbourneWindow(dt: Date): Date {
+  const h = melbourneHourOf(dt);
+  if (h >= 9 && h < 19) return dt;
+  const dateKey = dt.toLocaleDateString('en-CA', { timeZone: 'Australia/Melbourne' });
+  if (h >= 19) {
+    const base = new Date(`${dateKey}T12:00:00Z`);
+    base.setUTCDate(base.getUTCDate() + 1);
+    return nineAmMelbourne(base.toISOString().slice(0, 10));
+  }
+  return nineAmMelbourne(dateKey);
+}
+
+// Retry ladder: given the number of calls made so far, returns when to schedule the next.
+// 1 attempt → +8h | 2 → +24h | 3 → +72h | ≥4 → null (exhausted).
+// All times clamped to the 9am–7pm Melbourne window.
+export function nextCallAt(attempts: number, from: Date = new Date()): Date | null {
+  const hoursMap: Record<number, number> = { 1: 8, 2: 24, 3: 72 };
+  const hours = hoursMap[attempts];
+  if (hours === undefined) return null;
+  return clampToMelbourneWindow(new Date(from.getTime() + hours * 3_600_000));
+}
+
+// ── SMS via Twilio ────────────────────────────────────────────
+
+export async function sendSMS(to: string, body: string): Promise<boolean> {
+  const sid  = process.env.TWILIO_SID;
+  const auth = process.env.TWILIO_AUTH;
+  const from = process.env.TWILIO_FROM;
+  const missing = !sid || sid === 'placeholder' || !auth || auth === 'placeholder' || !from || from === 'placeholder';
+  if (missing) {
+    const masked = normaliseAU(to).replace(/(\+\d{4})\d+(\d{3})$/, '$1 *** $2');
+    console.log(`[dental-outbound] SMS dry-run → ${masked}\n  "${body}"`);
+    return false;
+  }
+  const twilio = (await import('twilio')).default;
+  const client = twilio(sid!, auth!);
+  await client.messages.create({ from: from!, to: normaliseAU(to), body });
+  return true;
 }
 
 export interface LeadRef {
@@ -38,6 +105,7 @@ export interface LeadRef {
   treatment_interest: string | null | undefined;
   timeline:           string | null | undefined;
   email:              string | null | undefined;
+  call_attempts?:     number;
 }
 
 export interface OutboundOpts {
@@ -105,7 +173,7 @@ export async function triggerOutboundCall(
     if (dnc) {
       const reason = (dnc as { reason: string }).reason;
       console.log(`[dental-outbound] call skipped — DNC (${reason})`);
-      await updateLead({ status: 'suppressed' });
+      await updateLead({ status: 'suppressed', sequence_status: 'suppressed' });
       await logRun('skipped', `DNC: ${reason}`);
       return { outcome: 'suppressed', notes: `DNC: ${reason}` };
     }
@@ -179,7 +247,12 @@ export async function triggerOutboundCall(
     console.log(`[dental-outbound] call initiated — call_id=${callId || 'unknown'}`);
 
     // Store call_id and advance status on the lead
-    await updateLead({ status: 'calling', retell_call_id: callId || null });
+    await updateLead({
+      status:          'calling',
+      sequence_status: 'calling',
+      retell_call_id:  callId || null,
+      call_attempts:   (lead.call_attempts ?? 0) + 1,
+    });
     await logRun('success', `call_id=${callId || 'unknown'}`);
     return { outcome: 'calling', notes: `call_id=${callId}` };
 
