@@ -284,7 +284,7 @@ const LOG_CAPTURE_ALLOWED = new Set([
   'investment_comfort', 'funding_pathway', 'who_involved',
   'decision_maker', 'partner_name', 'partner_attending',
   'preferred_slot_start', 'preferred_slot_label',
-  'call_notes',
+  'call_notes', 'verbatim_quotes',
 ]);
 
 async function actionLogCapture(

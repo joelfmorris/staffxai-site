@@ -26,13 +26,37 @@ const SB_KEY    = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Enquiry {
-  id:                  string | number;
-  first_name?:         string | null;
-  treatment_interest?: string | null;
-  status:              string;
-  treatment_value?:    number | null;
-  prior_consult?:      boolean | null;
-  created_at:          string;
+  id:                                 string | number;
+  first_name?:                        string | null;
+  mobile?:                            string | null;
+  email?:                             string | null;
+  treatment_interest?:                string | null;
+  timeline?:                          string | null;
+  status:                             string;
+  sequence_status?:                   string | null;
+  treatment_value?:                   number | null;
+  prior_consult?:                     boolean | null;
+  appointment_at?:                    string | null;
+  tooth_rating?:                      number | null;
+  readiness_rating?:                  number | null;
+  treatment_scope?:                   string | null;
+  dental_situation?:                  string | null;
+  emotional_impact?:                  string | null;
+  lifestyle_impact?:                  string | null;
+  verbatim_quotes?:                   string | null;
+  call_notes?:                        string | null;
+  milestone_event?:                   string | null;
+  vacation_goal?:                     string | null;
+  trigger_event?:                     string | null;
+  investment_comfort?:                string | null;
+  funding_pathway?:                   string | null;
+  who_involved?:                      string | null;
+  partner_name?:                      string | null;
+  partner_attending?:                 boolean | null;
+  previous_dentist?:                  string | null;
+  previous_treatment_stopped_reason?: string | null;
+  brief_sent_at?:                     string | null;
+  created_at:                         string;
 }
 
 interface AgentRun {
@@ -525,6 +549,169 @@ export default async function PracticeDashboardPage() {
             </div>
           )}
         </section>
+
+        {/* ── PATIENT BRIEFS ──────────────────────────────────────────────── */}
+        {(() => {
+          const bookedLeads = enquiries.filter(e =>
+            (e.sequence_status === 'booked' || e.status === 'booked') && e.appointment_at,
+          ).sort((a, b) =>
+            new Date(a.appointment_at!).getTime() - new Date(b.appointment_at!).getTime(),
+          );
+          if (bookedLeads.length === 0) return null;
+
+          return (
+            <section className="mb-10">
+              <h2
+                className="font-display leading-tight mb-5"
+                style={{ color: T.text, fontSize: 'clamp(1.2rem, 3vw, 1.6rem)' }}
+              >
+                Patient briefs.
+              </h2>
+
+              <div className="flex flex-col gap-5">
+                {bookedLeads.map(e => {
+                  const briefLines: Array<{ label: string; value: string }> = [];
+                  const push = (label: string, ...parts: Array<string | null | undefined>) => {
+                    const v = parts.filter(Boolean).join(' · ');
+                    if (v) briefLines.push({ label, value: v });
+                  };
+
+                  push('Desired outcome', e.treatment_scope, e.dental_situation, e.treatment_interest);
+                  push('Emotional driver', e.emotional_impact, e.lifestyle_impact);
+                  push('Occasion / deadline', e.milestone_event, e.vacation_goal, e.trigger_event);
+                  push('Funding pathway', e.investment_comfort, e.funding_pathway);
+                  push('Attending',
+                    e.who_involved,
+                    e.partner_name ? `Partner: ${e.partner_name}` : null,
+                    e.partner_attending === true  ? '(attending)' : null,
+                    e.partner_attending === false ? '(not attending)' : null,
+                  );
+                  push('Prior history',
+                    e.prior_consult ? 'Has had prior consultation' : null,
+                    e.previous_dentist ? `Prev. dentist: ${e.previous_dentist}` : null,
+                    e.previous_treatment_stopped_reason,
+                  );
+
+                  const quotes = [e.verbatim_quotes, e.call_notes].filter(Boolean).join(' / ');
+
+                  return (
+                    <div
+                      key={String(e.id)}
+                      className="rounded-card overflow-hidden"
+                      style={{ background: T.white, border: `1px solid ${T.border}` }}
+                    >
+                      {/* Brief header */}
+                      <div
+                        className="px-6 py-5"
+                        style={{ background: T.accent, color: '#fff' }}
+                      >
+                        <p
+                          className="font-mono uppercase mb-1"
+                          style={{ fontSize: '0.62rem', letterSpacing: '0.16em', opacity: 0.75 }}
+                        >
+                          Patient Brief
+                          {e.brief_sent_at && (
+                            <span style={{ marginLeft: '10px', opacity: 0.6 }}>
+                              · emailed {fmtMelbourne(e.brief_sent_at)}
+                            </span>
+                          )}
+                        </p>
+                        <p className="font-display text-xl leading-tight">{e.first_name}</p>
+                        <p className="text-sm mt-1" style={{ opacity: 0.85 }}>
+                          {fmtMelbourne(e.appointment_at!)}
+                        </p>
+                      </div>
+
+                      {/* Ratings bar */}
+                      {(e.tooth_rating != null || e.readiness_rating != null) && (
+                        <div
+                          className="flex gap-8 px-6 py-4"
+                          style={{ background: T.accentPale, borderBottom: `1px solid ${T.border}` }}
+                        >
+                          {e.tooth_rating != null && (
+                            <div>
+                              <p className="font-mono uppercase mb-1" style={{ fontSize: '0.6rem', letterSpacing: '0.12em', color: T.muted }}>Tooth rating</p>
+                              <p className="font-semibold" style={{ color: T.text, fontSize: '1.4rem', letterSpacing: '-0.03em' }}>
+                                {e.tooth_rating}<span className="text-sm font-normal" style={{ color: T.muted }}>/10</span>
+                              </p>
+                            </div>
+                          )}
+                          {e.readiness_rating != null && (
+                            <div>
+                              <p className="font-mono uppercase mb-1" style={{ fontSize: '0.6rem', letterSpacing: '0.12em', color: T.muted }}>Readiness</p>
+                              <p className="font-semibold" style={{ color: T.text, fontSize: '1.4rem', letterSpacing: '-0.03em' }}>
+                                {e.readiness_rating}<span className="text-sm font-normal" style={{ color: T.muted }}>/10</span>
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Brief rows */}
+                      {briefLines.length > 0 && (
+                        <div className="px-6 py-4">
+                          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <tbody>
+                              {briefLines.map(({ label, value }) => (
+                                <tr key={label} style={{ borderBottom: `1px solid ${T.border}` }}>
+                                  <td
+                                    className="font-mono uppercase"
+                                    style={{
+                                      padding: '10px 16px 10px 0',
+                                      fontSize: '0.6rem', letterSpacing: '0.1em',
+                                      color: T.muted, whiteSpace: 'nowrap',
+                                      verticalAlign: 'top', width: '140px',
+                                    }}
+                                  >
+                                    {label}
+                                  </td>
+                                  <td style={{ padding: '10px 0', fontSize: '13px', color: T.text, lineHeight: '1.55' }}>
+                                    {value}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+
+                      {/* Verbatim quotes */}
+                      {quotes && (
+                        <div
+                          className="mx-6 mb-5 px-4 py-4 rounded-lg"
+                          style={{ background: T.ground, borderLeft: `3px solid ${T.accent}` }}
+                        >
+                          <p className="font-mono uppercase mb-2" style={{ fontSize: '0.6rem', letterSpacing: '0.12em', color: T.muted }}>
+                            Verbatim notes
+                          </p>
+                          <p className="text-sm italic leading-relaxed" style={{ color: T.text }}>
+                            &ldquo;{quotes}&rdquo;
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Contact footer */}
+                      <div
+                        className="flex gap-4 px-6 py-3"
+                        style={{ background: T.ground, borderTop: `1px solid ${T.border}` }}
+                      >
+                        {e.mobile && (
+                          <span className="text-xs font-mono" style={{ color: T.muted }}>{e.mobile}</span>
+                        )}
+                        {e.email && (
+                          <span className="text-xs font-mono" style={{ color: T.muted }}>{e.email}</span>
+                        )}
+                        {e.timeline && (
+                          <span className="text-xs font-mono" style={{ color: T.muted }}>Timeline: {e.timeline}</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })()}
 
         {/* ── PLACEHOLDER CARDS ───────────────────────────────────────────── */}
         <section className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-12">
