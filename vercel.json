@@ -3,6 +3,10 @@
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "crons": [
-    { "path": "/api/cron/pending-calls", "schedule": "*/15 * * * *" }
+    {
+      "path": "/api/cron/pending-calls",
+      "schedule": "0 22 * * *",
+      "_note": "Hobby-plan constraint: daily only. Intended schedule is */15 * * * * — upgrade to Pro to enable."
+    }
   ]
 }
