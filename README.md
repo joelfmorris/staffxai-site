@@ -116,6 +116,12 @@ git push
 - **React Router 7** — Client-side routing (home + blog)
 - **Vercel** — Hosting (free tier, global CDN, auto-HTTPS)
 
+## Cron Jobs
+
+| Route | Schedule | Notes |
+|---|---|---|
+| `/api/cron/pending-calls` | `0 22 * * *` (9am AEST daily) | Hobby-plan constraint — one cron per day. Intended schedule is `*/15 * * * *`; upgrade to Vercel Pro to enable. |
+
 ## Future Enhancements
 - [ ] Swap blog HTML strings for .md files with frontmatter
 - [ ] Add RSS feed for blog
