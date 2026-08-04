@@ -251,9 +251,19 @@ async function sendDepositBackground(db: SupabaseClient, lead: Lead, t0: number)
     return;
   }
 
+  // Append client_reference_id so the Stripe webhook can match back to this lead
+  let trackableLink = depositLink!;
+  try {
+    const url = new URL(depositLink!);
+    url.searchParams.set('client_reference_id', lead.id);
+    trackableLink = url.toString();
+  } catch {
+    // depositLink isn't a valid URL (e.g. a short code) — use as-is
+  }
+
   // SMS copy: "hold" not "book/confirm/lock in" — slot is held on payment, not now
   const text =
-    `Hi ${lead.first_name}, here's your secure link to hold your consultation spot: ${depositLink}. ` +
+    `Hi ${lead.first_name}, here's your secure link to hold your consultation spot: ${trackableLink}. ` +
     `It's a $50 fully refundable deposit — taken off any treatment you go ahead with. ` +
     `Once you've paid, we'll be in touch to sort the details. — Maya`;
 
@@ -281,7 +291,7 @@ const LOG_CAPTURE_ALLOWED = new Set([
   'tooth_rating', 'readiness_rating',
   'lifestyle_impact', 'emotional_impact', 'vacation_goal',
   'milestone_event', 'trigger_event',
-  'investment_comfort', 'funding_pathway', 'who_involved',
+  'investment_comfort', 'funding_pathway', 'payment_plan_eligible', 'who_involved',
   'decision_maker', 'partner_name', 'partner_attending',
   'preferred_slot_start', 'preferred_slot_label',
   'call_notes', 'verbatim_quotes',

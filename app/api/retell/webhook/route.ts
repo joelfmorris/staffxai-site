@@ -68,6 +68,7 @@ export async function POST(req: NextRequest) {
   const startTs            = call.start_timestamp as number | undefined;
   const endTs              = call.end_timestamp   as number | undefined;
   const disconnectReason   = (call.disconnection_reason as string | undefined) ?? '';
+  const recordingUrl       = (call.recording_url as string | undefined) ?? null;
   const dynVars            = (call.retell_llm_dynamic_variables ?? {}) as Record<string, unknown>;
   const leadIdFromVars     = dynVars.lead_id as string | undefined;
 
@@ -105,12 +106,15 @@ export async function POST(req: NextRequest) {
     return new NextResponse(null, { status: 204 });
   }
 
-  const leadId       = lead.id as string;
-  const mobile       = lead.mobile as string;
-  const firstName    = lead.first_name as string;
-  const attempts     = (lead.call_attempts as number | null) ?? 1;
+  const leadId        = lead.id as string;
+  const mobile        = lead.mobile as string;
+  const firstName     = lead.first_name as string;
+  const attempts      = (lead.call_attempts as number | null) ?? 1;
   const depositSentAt = lead.deposit_sent_at as string | null;
-  const ts           = new Date().toISOString();
+  const ts            = new Date().toISOString();
+
+  // Include recording URL in every outcome update if Retell provided one
+  const transcriptFields = recordingUrl ? { call_transcript_url: recordingUrl } : {};
 
   async function updateLead(fields: Record<string, unknown>) {
     const { error } = await db
@@ -123,7 +127,7 @@ export async function POST(req: NextRequest) {
   // ── Booked: deposit was sent during the call ──────────────
   if (depositSentAt) {
     console.log(`[retell/webhook] ${leadId} — BOOKED`);
-    await updateLead({ sequence_status: 'booked', last_call_outcome: 'booked' });
+    await updateLead({ sequence_status: 'booked', last_call_outcome: 'booked', ...transcriptFields });
     return new NextResponse(null, { status: 204 });
   }
 
@@ -137,6 +141,7 @@ export async function POST(req: NextRequest) {
       last_call_outcome: 'human_engaged',
       needs_human:       true,
       human_flag_reason: `Call lasted ${secs}s without deposit — manual follow-up needed`,
+      ...transcriptFields,
     });
 
     const alertMobile = process.env.PRACTICE_ALERT_MOBILE;
@@ -159,7 +164,7 @@ export async function POST(req: NextRequest) {
   if (!next) {
     // Sequence exhausted
     console.log(`[retell/webhook] ${leadId} — exhausted after ${attempts} attempt(s)`);
-    await updateLead({ sequence_status: 'exhausted', last_call_outcome: 'exhausted' });
+    await updateLead({ sequence_status: 'exhausted', last_call_outcome: 'exhausted', ...transcriptFields });
 
     const bookingLink = process.env.BOOKING_LINK;
     if (bookingLink) {
@@ -176,6 +181,7 @@ export async function POST(req: NextRequest) {
       sequence_status:   'pending',
       last_call_outcome: disconnectReason || 'no_answer',
       next_call_at:      next.toISOString(),
+      ...transcriptFields,
     });
   }
 

@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@sendgrid/mail": "^8.1.6",
     "@supabase/supabase-js": "^2.110.0",
     "@types/nodemailer": "^8.0.1",
     "@vercel/functions": "^3.7.6",
