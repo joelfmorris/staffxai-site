@@ -4,14 +4,14 @@
 // Only processes 'call_ended'. All other events → 204.
 //
 // Outcome logic:
-//   deposit_sent_at set              → 'booked', stop sequence
+//   deposit_sent_at set              → 'deposit_chasing': SMS at promise_time / +2h, requeue at +24h
 //   duration >= 30s, not booked      → 'human_engaged', flag for review, stop retrying
 //   voicemail / machine / short call → failed attempt, schedule next per retry ladder
 //   attempts >= 4 after failure      → 'exhausted', send final booking SMS
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createHmac, timingSafeEqual } from 'crypto';
-import { makeSupabase, nextCallAt, sendSMS } from '@/lib/dental-outbound';
+import { makeSupabase, nextCallAt, sendSMS, clampToMelbourneWindow } from '@/lib/dental-outbound';
 
 const HUMAN_THRESHOLD_MS = 30_000;
 const NO_ANSWER_REASONS  = new Set([
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
   if (callId) {
     const { data } = await db
       .from('dental_enquiries')
-      .select('id, mobile, first_name, call_attempts, deposit_sent_at, sequence_status')
+      .select('id, mobile, first_name, call_attempts, deposit_sent_at, deposit_promise_time, sequence_status')
       .eq('retell_call_id', callId)
       .maybeSingle();
     lead = data;
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
   if (!lead && leadIdFromVars) {
     const { data } = await db
       .from('dental_enquiries')
-      .select('id, mobile, first_name, call_attempts, deposit_sent_at, sequence_status')
+      .select('id, mobile, first_name, call_attempts, deposit_sent_at, deposit_promise_time, sequence_status')
       .eq('id', leadIdFromVars)
       .maybeSingle();
     lead = data;
@@ -106,12 +106,13 @@ export async function POST(req: NextRequest) {
     return new NextResponse(null, { status: 204 });
   }
 
-  const leadId        = lead.id as string;
-  const mobile        = lead.mobile as string;
-  const firstName     = lead.first_name as string;
-  const attempts      = (lead.call_attempts as number | null) ?? 1;
-  const depositSentAt = lead.deposit_sent_at as string | null;
-  const ts            = new Date().toISOString();
+  const leadId         = lead.id as string;
+  const mobile         = lead.mobile as string;
+  const firstName      = lead.first_name as string;
+  const attempts       = (lead.call_attempts as number | null) ?? 1;
+  const depositSentAt  = lead.deposit_sent_at as string | null;
+  const depositPromise = lead.deposit_promise_time as string | null;
+  const ts             = new Date().toISOString();
 
   // Include recording URL in every outcome update if Retell provided one
   const transcriptFields = recordingUrl ? { call_transcript_url: recordingUrl } : {};
@@ -124,10 +125,23 @@ export async function POST(req: NextRequest) {
     if (error) console.error('[retell/webhook] lead update failed:', error.message);
   }
 
-  // ── Booked: deposit was sent during the call ──────────────
+  // ── Deposit sent: start chase sequence ───────────────────
+  // Deposit link was sent during the call but payment isn't confirmed until
+  // the Stripe webhook fires. Schedule a reminder SMS and a requeue check.
   if (depositSentAt) {
-    console.log(`[retell/webhook] ${leadId} — BOOKED`);
-    await updateLead({ sequence_status: 'booked', last_call_outcome: 'booked', ...transcriptFields });
+    // First check: at promise_time if patient named one, otherwise +2h clamped to business hours
+    const twoHoursOut  = new Date(Date.now() + 2 * 3_600_000);
+    const firstCheckAt = depositPromise
+      ? clampToMelbourneWindow(new Date(depositPromise))
+      : clampToMelbourneWindow(twoHoursOut);
+
+    console.log(`[retell/webhook] ${leadId} — deposit sent, chasing; first check ${firstCheckAt.toISOString()}`);
+    await updateLead({
+      sequence_status:       'deposit_chasing',
+      last_call_outcome:     'deposit_sent',
+      next_deposit_check_at: firstCheckAt.toISOString(),
+      ...transcriptFields,
+    });
     return new NextResponse(null, { status: 204 });
   }
 
