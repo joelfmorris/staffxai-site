@@ -9,6 +9,7 @@ import {
   triggerOutboundCall,
   sendSMS,
 } from '@/lib/dental-outbound';
+import { refreshCache } from '@/lib/calendly-cache';
 
 export async function POST(req: NextRequest) {
   const { firstName, mobile, email, treatmentInterest, timeline, priorConsult, consentAt } = await req.json();
@@ -62,9 +63,18 @@ export async function POST(req: NextRequest) {
       ? `Hi ${firstName}, thanks for your enquiry with Cranbourne Dental Studio! Someone will give you a call shortly. — Cranbourne Dental`
       : `Hi ${firstName}, thanks for your enquiry with Cranbourne Dental Studio! We'll give you a call tomorrow morning. — Cranbourne Dental`;
 
-    await sendSMS(normMobile, smsBody).catch((e: unknown) =>
-      console.error('[dental-enquiry] confirmation SMS failed:', e instanceof Error ? e.message : e),
-    );
+    // SMS and slot-cache warm-up fire in parallel — cache is ready before Maya asks for availability
+    const [smsResult, cacheResult] = await Promise.allSettled([
+      sendSMS(normMobile, smsBody),
+      refreshCache(supabase),
+    ]);
+
+    if (smsResult.status === 'rejected') {
+      console.error('[dental-enquiry] confirmation SMS failed:', smsResult.reason instanceof Error ? smsResult.reason.message : smsResult.reason);
+    }
+    if (cacheResult.status === 'rejected') {
+      console.warn('[dental-enquiry] slot cache warm-up failed:', cacheResult.reason instanceof Error ? cacheResult.reason.message : cacheResult.reason);
+    }
 
     // Outbound call — only if inside calling hours; otherwise cron picks it up at next_call_at
     if (insideHours) {
