@@ -43,6 +43,11 @@ export async function GET(req: NextRequest) {
   const auth   = req.headers.get('authorization') ?? '';
 
   if (!secret || auth !== `Bearer ${secret}`) {
+    const tokenLen = auth.startsWith('Bearer ') ? auth.length - 7 : auth.length;
+    console.log(
+      `[cron/pending-calls] auth failed — ` +
+      `secret_defined=${!!secret} secret_len=${secret?.length ?? 0} token_len=${tokenLen}`,
+    );
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

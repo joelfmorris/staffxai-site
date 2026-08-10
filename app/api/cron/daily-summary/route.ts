@@ -20,6 +20,11 @@ export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
   const auth   = req.headers.get('authorization') ?? '';
   if (!secret || auth !== `Bearer ${secret}`) {
+    const tokenLen = auth.startsWith('Bearer ') ? auth.length - 7 : auth.length;
+    console.log(
+      `[cron/daily-summary] auth failed — ` +
+      `secret_defined=${!!secret} secret_len=${secret?.length ?? 0} token_len=${tokenLen}`,
+    );
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
