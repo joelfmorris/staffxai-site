@@ -26,53 +26,78 @@ export function isAUMobile(mobile: string): boolean {
   return /^\+614\d{8}$/.test(normaliseAU(mobile));
 }
 
+// ── Calling-hours window (single source of truth) ────────────
+//
+// Change only here — isMelbourneBusinessHours, clampToMelbourneWindow,
+// and triggerOutboundCall all derive from these four values.
+
+export const CALL_WINDOW = {
+  open:  { hour: 8,  minute: 0  },   // 8:00am Melbourne
+  close: { hour: 18, minute: 30 },   // 6:30pm Melbourne
+} as const;
+
 // ── Melbourne time helpers ────────────────────────────────────
 
-function melbourneHourOf(dt: Date): number {
-  return parseInt(
-    new Intl.DateTimeFormat('en-AU', { hour: 'numeric', hour12: false, timeZone: 'Australia/Melbourne' })
-      .formatToParts(dt).find(p => p.type === 'hour')?.value ?? '0',
-    10,
-  );
+// Single Intl call returns both hour and minute — avoids two round-trips.
+// Uses Intl so AEST/AEDT is handled correctly by the IANA tz database.
+function melbourneHM(dt: Date = new Date()): { h: number; m: number } {
+  const parts = new Intl.DateTimeFormat('en-AU', {
+    hour: 'numeric', minute: '2-digit', hour12: false,
+    timeZone: 'Australia/Melbourne',
+  }).formatToParts(dt);
+  return {
+    h: parseInt(parts.find(p => p.type === 'hour')?.value   ?? '0', 10),
+    m: parseInt(parts.find(p => p.type === 'minute')?.value ?? '0', 10),
+  };
 }
 
-// Uses Intl so AEST/AEDT is handled correctly by the system's timezone data
-function melbourneHour(): number {
-  return melbourneHourOf(new Date());
+function isInWindow(h: number, m: number): boolean {
+  const totalMins = h * 60 + m;
+  const openMins  = CALL_WINDOW.open.hour  * 60 + CALL_WINDOW.open.minute;
+  const closeMins = CALL_WINDOW.close.hour * 60 + CALL_WINDOW.close.minute;
+  return totalMins >= openMins && totalMins < closeMins;
 }
 
 export function isMelbourneBusinessHours(): boolean {
-  const h = melbourneHour();
-  return h >= 9 && h < 19;
+  const { h, m } = melbourneHM();
+  return isInWindow(h, m);
 }
 
-// Constructs the UTC Date for 09:00 Melbourne time on the given YYYY-MM-DD key.
-// Tries AEDT (+11) then AEST (+10) and picks whichever actually lands on Melbourne hour 9.
-function nineAmMelbourne(dateKey: string): Date {
+// Constructs the UTC Date for the window-open time (CALL_WINDOW.open) on the
+// given YYYY-MM-DD key. Tries AEDT (+11) then AEST (+10) and keeps whichever
+// actually lands on the correct Melbourne hour:minute.
+function windowOpenMelbourne(dateKey: string): Date {
+  const hh = String(CALL_WINDOW.open.hour).padStart(2, '0');
+  const mm  = String(CALL_WINDOW.open.minute).padStart(2, '0');
   for (const offset of ['+11:00', '+10:00']) {
-    const candidate = new Date(`${dateKey}T09:00:00${offset}`);
-    if (melbourneHourOf(candidate) === 9) return candidate;
+    const candidate = new Date(`${dateKey}T${hh}:${mm}:00${offset}`);
+    const { h, m } = melbourneHM(candidate);
+    if (h === CALL_WINDOW.open.hour && m === CALL_WINDOW.open.minute) return candidate;
   }
-  return new Date(`${dateKey}T09:00:00+10:00`);
+  return new Date(`${dateKey}T${hh}:${mm}:00+10:00`);
 }
 
-// Clamps dt into the 9am–7pm Melbourne window.
-// Before 9am → same day 9am Melbourne. After 7pm → next day 9am Melbourne.
+// Clamps dt into the calling-hours window.
+// Before open → same-day window open. After close → next-day window open.
 export function clampToMelbourneWindow(dt: Date): Date {
-  const h = melbourneHourOf(dt);
-  if (h >= 9 && h < 19) return dt;
-  const dateKey = dt.toLocaleDateString('en-CA', { timeZone: 'Australia/Melbourne' });
-  if (h >= 19) {
+  const { h, m } = melbourneHM(dt);
+  if (isInWindow(h, m)) return dt;
+  const dateKey   = dt.toLocaleDateString('en-CA', { timeZone: 'Australia/Melbourne' });
+  const totalMins = h * 60 + m;
+  const closeMins = CALL_WINDOW.close.hour * 60 + CALL_WINDOW.close.minute;
+  if (totalMins >= closeMins) {
+    // After closing → advance to next-day opening
     const base = new Date(`${dateKey}T12:00:00Z`);
     base.setUTCDate(base.getUTCDate() + 1);
-    return nineAmMelbourne(base.toISOString().slice(0, 10));
+    return windowOpenMelbourne(base.toISOString().slice(0, 10));
   }
-  return nineAmMelbourne(dateKey);
+  // Before opening → same-day opening
+  return windowOpenMelbourne(dateKey);
 }
 
 // Retry ladder: given the number of calls made so far, returns when to schedule the next.
 // 1 attempt → +8h | 2 → +24h | 3 → +72h | ≥4 → null (exhausted).
-// All times clamped to the 9am–7pm Melbourne window.
+// All times clamped to the calling-hours window.
 export function nextCallAt(attempts: number, from: Date = new Date()): Date | null {
   const hoursMap: Record<number, number> = { 1: 8, 2: 24, 3: 72 };
   const hours = hoursMap[attempts];
@@ -109,11 +134,8 @@ export interface LeadRef {
 }
 
 export interface OutboundOpts {
-  forceHours?: boolean;  // bypass 9am–7pm gate (test/backfill use only)
+  forceHours?: boolean;  // bypass calling-hours gate (test/backfill use only)
 }
-
-const CALL_HOUR_START = 9;
-const CALL_HOUR_END   = 19;
 
 export async function triggerOutboundCall(
   supabase: Supabase,
@@ -185,15 +207,15 @@ export async function triggerOutboundCall(
   }
 
   // ── Calling hours check ────────────────────────────────────
-  const hour = melbourneHour();
-  console.log(`[dental-outbound] Melbourne hour=${hour} forceHours=${!!opts.forceHours} window=${CALL_HOUR_START}–${CALL_HOUR_END}`);
-  if (!opts.forceHours) {
-    if (hour < CALL_HOUR_START || hour >= CALL_HOUR_END) {
-      console.log(`[dental-outbound] call deferred — outside hours (hour=${hour})`);
-      await updateLead({ status: 'call_pending' });
-      await logRun('skipped', `Outside calling hours (hour=${hour} Melbourne)`);
-      return { outcome: 'call_pending', notes: `Outside hours (hour=${hour})` };
-    }
+  const { h: hour, m: minute } = melbourneHM();
+  const windowStr = `${CALL_WINDOW.open.hour}:${String(CALL_WINDOW.open.minute).padStart(2, '0')}–${CALL_WINDOW.close.hour}:${String(CALL_WINDOW.close.minute).padStart(2, '0')}`;
+  console.log(`[dental-outbound] Melbourne ${hour}:${String(minute).padStart(2, '0')} forceHours=${!!opts.forceHours} window=${windowStr}`);
+  if (!opts.forceHours && !isInWindow(hour, minute)) {
+    const timeStr = `${hour}:${String(minute).padStart(2, '0')}`;
+    console.log(`[dental-outbound] call deferred — outside hours (${timeStr} Melbourne)`);
+    await updateLead({ status: 'call_pending' });
+    await logRun('skipped', `Outside calling hours (${timeStr} Melbourne)`);
+    return { outcome: 'call_pending', notes: `Outside hours (${timeStr})` };
   }
 
   // ── Retell outbound call ───────────────────────────────────
