@@ -17,13 +17,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { makeSupabase, sendSMS } from '@/lib/dental-outbound';
 
 export async function GET(req: NextRequest) {
-  const secret = process.env.CRON_SECRET;
-  const auth   = req.headers.get('authorization') ?? '';
-  if (!secret || auth !== `Bearer ${secret}`) {
-    const tokenLen = auth.startsWith('Bearer ') ? auth.length - 7 : auth.length;
+  const secret      = process.env.CRON_SECRET;
+  const auth        = req.headers.get('authorization') ?? '';
+  const bearerToken = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+  const queryToken  = req.nextUrl.searchParams.get('secret') ?? '';
+  const token       = bearerToken || queryToken; // header takes precedence
+
+  if (!secret || token !== secret) {
     console.log(
       `[cron/daily-summary] auth failed — ` +
-      `secret_defined=${!!secret} secret_len=${secret?.length ?? 0} token_len=${tokenLen}`,
+      `secret_defined=${!!secret} secret_len=${secret?.length ?? 0} ` +
+      `bearer_len=${bearerToken.length} query_len=${queryToken.length}`,
     );
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
