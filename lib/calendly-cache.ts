@@ -192,6 +192,8 @@ export async function readCache(db: Supabase): Promise<CacheRow | null> {
 
 // Fetch fresh slots from Calendly, upsert into cache, return the new row.
 export async function refreshCache(db: Supabase): Promise<CacheRow> {
+  console.log('[calendly-cache] refresh start');
+
   const slots       = await fetchFromCalendly(DEFAULT_FETCH_COUNT);
   const slots_human = slotsToHuman(slots);
   const refreshed_at = new Date().toISOString();
@@ -204,6 +206,8 @@ export async function refreshCache(db: Supabase): Promise<CacheRow> {
   if (error) {
     // Non-fatal — caller still gets fresh data even if upsert failed
     console.error('[calendly-cache] upsert failed:', error.message);
+  } else {
+    console.log(`[calendly-cache] refresh done — ${slots.length} slot(s) cached: ${slots_human}`);
   }
 
   return { slots_json: slots, slots_human, refreshed_at };

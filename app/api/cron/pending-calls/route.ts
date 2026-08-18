@@ -17,6 +17,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { makeSupabase, triggerOutboundCall, clampToMelbourneWindow, sendSMS } from '@/lib/dental-outbound';
 import { sendPatientBrief, type LeadBrief } from '@/lib/patient-brief';
+import { refreshCache } from '@/lib/calendly-cache';
 
 // ── Slot time formatter ───────────────────────────────────────
 
@@ -56,6 +57,16 @@ export async function GET(req: NextRequest) {
 
   const db  = makeSupabase();
   const now = new Date();
+
+  // ── 0. Calendly slot cache warm-up ────────────────────────
+  // Refresh before calls go out so Maya never blocks on Calendly mid-call.
+  // Non-fatal: a Calendly outage must not block the call sweep or brief sweep.
+  const cacheWarmResult = await refreshCache(db)
+    .then(r => ({ ok: true, slots: r.slots_json.length }))
+    .catch((e: unknown) => {
+      console.error('[cron/pending-calls] slot cache warm-up failed:', e instanceof Error ? e.message : e);
+      return { ok: false, slots: 0 };
+    });
 
   // ── 1. Call sweep ──────────────────────────────────────────
   const { data: pendingRows, error: callErr } = await db
@@ -201,6 +212,7 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json({
+    cache:  cacheWarmResult,
     calls:  { processed: callResults.length, results: callResults },
     briefs: { processed: briefResults.length, results: briefResults },
     chase:  { processed: chaseResults.length, results: chaseResults },
