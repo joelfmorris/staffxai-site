@@ -1,8 +1,23 @@
 // lib/dental-outbound.ts
 //
 // Shared outbound-call logic used by:
-//   app/api/dental-enquiry/route.ts   — fires on every new web enquiry
-//   app/api/retell/trigger-test/route.ts — manual test trigger
+//   app/api/dental-enquiry/route.ts       — fires on every new web enquiry
+//   app/api/cron/pending-calls/route.ts   — daily cron sweep
+//   app/api/retell/trigger-test/route.ts  — manual test trigger
+//
+// ── Safety rails (all checked inside triggerOutboundCall) ──────────────────
+//
+//   CALLS_ENABLED env var   — must be exactly 'true'; otherwise all calls are
+//                             suppressed. This is the master kill switch.
+//   MAX_CALL_ATTEMPTS = 4   — checked against call_attempts BEFORE dialling.
+//                             If the webhook ever misses a delivery, the cron
+//                             picks the lead back up and this gate fires first.
+//   Lifetime mobile cap     — verified against agent_runs (not the lead row),
+//                             so a corrupted call_attempts field can't bypass it.
+//   12h cooldown per mobile — verified against agent_runs; blocks re-calls
+//                             within COOLDOWN_HOURS regardless of lead state.
+//   Daily cap (default 20)  — rolling 24h window; halts + alerts on first hit.
+//                             Override with DAILY_CALL_CAP env var.
 
 import { createClient } from '@supabase/supabase-js';
 
@@ -21,7 +36,6 @@ export function normaliseAU(mobile: string): string {
   return '+61' + digits;
 }
 
-// Validates an Australian mobile — must normalise to +614xxxxxxxx (9 digits after +614)
 export function isAUMobile(mobile: string): boolean {
   return /^\+614\d{8}$/.test(normaliseAU(mobile));
 }
@@ -36,10 +50,13 @@ export const CALL_WINDOW = {
   close: { hour: 18, minute: 30 },   // 6:30pm Melbourne
 } as const;
 
+// ── Safety rail constants ─────────────────────────────────────
+
+export const MAX_CALL_ATTEMPTS = 4;   // Lifetime cap per mobile
+export const COOLDOWN_HOURS    = 12;  // Minimum gap between calls to the same mobile
+
 // ── Melbourne time helpers ────────────────────────────────────
 
-// Single Intl call returns both hour and minute — avoids two round-trips.
-// Uses Intl so AEST/AEDT is handled correctly by the IANA tz database.
 function melbourneHM(dt: Date = new Date()): { h: number; m: number } {
   const parts = new Intl.DateTimeFormat('en-AU', {
     hour: 'numeric', minute: '2-digit', hour12: false,
@@ -63,9 +80,6 @@ export function isMelbourneBusinessHours(): boolean {
   return isInWindow(h, m);
 }
 
-// Constructs the UTC Date for the window-open time (CALL_WINDOW.open) on the
-// given YYYY-MM-DD key. Tries AEDT (+11) then AEST (+10) and keeps whichever
-// actually lands on the correct Melbourne hour:minute.
 function windowOpenMelbourne(dateKey: string): Date {
   const hh = String(CALL_WINDOW.open.hour).padStart(2, '0');
   const mm  = String(CALL_WINDOW.open.minute).padStart(2, '0');
@@ -77,8 +91,6 @@ function windowOpenMelbourne(dateKey: string): Date {
   return new Date(`${dateKey}T${hh}:${mm}:00+10:00`);
 }
 
-// Clamps dt into the calling-hours window.
-// Before open → same-day window open. After close → next-day window open.
 export function clampToMelbourneWindow(dt: Date): Date {
   const { h, m } = melbourneHM(dt);
   if (isInWindow(h, m)) return dt;
@@ -86,12 +98,10 @@ export function clampToMelbourneWindow(dt: Date): Date {
   const totalMins = h * 60 + m;
   const closeMins = CALL_WINDOW.close.hour * 60 + CALL_WINDOW.close.minute;
   if (totalMins >= closeMins) {
-    // After closing → advance to next-day opening
     const base = new Date(`${dateKey}T12:00:00Z`);
     base.setUTCDate(base.getUTCDate() + 1);
     return windowOpenMelbourne(base.toISOString().slice(0, 10));
   }
-  // Before opening → same-day opening
   return windowOpenMelbourne(dateKey);
 }
 
@@ -134,19 +144,24 @@ export interface LeadRef {
 }
 
 export interface OutboundOpts {
-  forceHours?: boolean;  // bypass calling-hours gate (test/backfill use only)
+  forceHours?: boolean;  // bypass calling-hours gate (cron/test use only)
 }
+
+// ── triggerOutboundCall ───────────────────────────────────────
 
 export async function triggerOutboundCall(
   supabase: Supabase,
   lead: LeadRef,
   opts: OutboundOpts = {},
 ): Promise<{ outcome: string; notes: string }> {
-  const norm = normaliseAU(lead.mobile);
-  const ts   = new Date().toISOString();
+  const norm    = normaliseAU(lead.mobile);
+  const ts      = new Date().toISOString();
+  const attempts = lead.call_attempts ?? 0;
 
-  console.log(`[dental-outbound] start — lead_id=${lead.id} mobile=${norm}`);
+  console.log(`[dental-outbound] start — lead_id=${lead.id} mobile=${norm} call_attempts=${attempts}`);
 
+  // logRun: every exit path calls this so the audit trail is complete.
+  // mobile is stored in input so we can query per-mobile caps from agent_runs.
   async function logRun(status: 'success' | 'failed' | 'skipped', notes: string) {
     try {
       const { error } = await supabase.from('agent_runs').insert({
@@ -156,6 +171,7 @@ export async function triggerOutboundCall(
           source:    'retell',
           action:    'outbound_trigger',
           lead_id:   lead.id,
+          mobile:    norm,            // required for per-mobile cap queries
           client_id: 'cranbourne-demo',
         },
         output:       { notes },
@@ -181,7 +197,17 @@ export async function triggerOutboundCall(
     }
   }
 
-  // ── DNC check ──────────────────────────────────────────────
+  // ── 1. CALLS_ENABLED kill switch ──────────────────────────
+  // Set CALLS_ENABLED=true in Vercel to enable. Any other value (including
+  // missing / 'false' / anything else) suppresses all outbound calls.
+  // This check runs before everything else and does NOT write to agent_runs
+  // so it has zero side effects.
+  if (process.env.CALLS_ENABLED !== 'true') {
+    console.log('[dental-outbound] CALLS_ENABLED != true — kill switch active, call suppressed');
+    return { outcome: 'disabled', notes: 'CALLS_ENABLED is not set to true' };
+  }
+
+  // ── 2. DNC check ──────────────────────────────────────────
   console.log(`[dental-outbound] checking DNC for ${norm}`);
   try {
     const { data: dnc, error: dncErr } = await supabase
@@ -202,11 +228,26 @@ export async function triggerOutboundCall(
 
     console.log('[dental-outbound] DNC clear');
   } catch (e: unknown) {
-    // Fail open — a DNC lookup error should not block the call
     console.warn('[dental-outbound] DNC check threw — defaulting to allow:', e instanceof Error ? e.message : e);
   }
 
-  // ── Calling hours check ────────────────────────────────────
+  // ── 3. Pre-call exhaustion check ─────────────────────────
+  // This fires BEFORE dialling — not after the webhook — so a missed webhook
+  // delivery cannot cause a runaway loop. If call_attempts is already at the
+  // max, exhaust the lead immediately and return without calling.
+  if (attempts >= MAX_CALL_ATTEMPTS) {
+    console.warn(
+      `[dental-outbound] ${lead.id} already at ${attempts} attempts (max ${MAX_CALL_ATTEMPTS}) — ` +
+      `exhausting now without calling`,
+    );
+    await updateLead({ sequence_status: 'exhausted', last_call_outcome: 'pre_exhausted', next_call_at: null });
+    await logRun('skipped', `pre_exhausted: call_attempts=${attempts}`);
+    return { outcome: 'exhausted', notes: `Max attempts (${MAX_CALL_ATTEMPTS}) already reached` };
+  }
+
+  // ── 4. Calling hours check ────────────────────────────────
+  // Defer (not block) if outside the window. Safety rails in step 5 don't
+  // fire for deferred calls — deferral doesn't consume any cap.
   const { h: hour, m: minute } = melbourneHM();
   const windowStr = `${CALL_WINDOW.open.hour}:${String(CALL_WINDOW.open.minute).padStart(2, '0')}–${CALL_WINDOW.close.hour}:${String(CALL_WINDOW.close.minute).padStart(2, '0')}`;
   console.log(`[dental-outbound] Melbourne ${hour}:${String(minute).padStart(2, '0')} forceHours=${!!opts.forceHours} window=${windowStr}`);
@@ -218,7 +259,85 @@ export async function triggerOutboundCall(
     return { outcome: 'call_pending', notes: `Outside hours (${timeStr})` };
   }
 
-  // ── Retell outbound call ───────────────────────────────────
+  // ── 5. Agent-runs safety rails ───────────────────────────
+  // These query the audit log rather than the lead row, so they catch bugs
+  // that corrupt call_attempts or sequence_status on the lead.
+  // All three queries run in parallel to minimise latency.
+  const since12h = new Date(Date.now() - COOLDOWN_HOURS * 3_600_000).toISOString();
+  const since24h = new Date(Date.now() - 24 * 3_600_000).toISOString();
+  const dailyCap = parseInt(process.env.DAILY_CALL_CAP ?? '20', 10);
+
+  const [lifetimeRes, recentRes, dailyRes] = await Promise.all([
+    // Lifetime successful calls to this mobile number in agent_runs
+    supabase.from('agent_runs')
+      .select('id', { count: 'exact', head: true })
+      .eq('agent_name', 'retell')
+      .eq('status', 'success')
+      .filter('input->>action', 'eq', 'outbound_trigger')
+      .filter('input->>mobile', 'eq', norm),
+
+    // Calls to this mobile in the last COOLDOWN_HOURS
+    supabase.from('agent_runs')
+      .select('id', { count: 'exact', head: true })
+      .eq('agent_name', 'retell')
+      .eq('status', 'success')
+      .filter('input->>action', 'eq', 'outbound_trigger')
+      .filter('input->>mobile', 'eq', norm)
+      .gte('started_at', since12h),
+
+    // All successful outbound calls in the last 24h (rolling daily cap)
+    supabase.from('agent_runs')
+      .select('id', { count: 'exact', head: true })
+      .eq('agent_name', 'retell')
+      .eq('status', 'success')
+      .filter('input->>action', 'eq', 'outbound_trigger')
+      .gte('started_at', since24h),
+  ]);
+
+  const lifetimeCalls = lifetimeRes.count ?? 0;
+  const recentCalls   = recentRes.count   ?? 0;
+  const dailyCalls    = dailyRes.count    ?? 0;
+
+  console.log(
+    `[dental-outbound] rails — lifetime=${lifetimeCalls} recent12h=${recentCalls} ` +
+    `daily=${dailyCalls}/${dailyCap} for ${norm}`,
+  );
+
+  // Rail A: lifetime mobile cap (agent_runs — immune to call_attempts corruption)
+  if (lifetimeCalls >= MAX_CALL_ATTEMPTS) {
+    console.warn(`[dental-outbound] ${norm} lifetime cap: ${lifetimeCalls} calls in agent_runs — exhausting`);
+    await updateLead({ sequence_status: 'exhausted', last_call_outcome: 'lifetime_cap', next_call_at: null });
+    await logRun('skipped', `lifetime_cap: ${lifetimeCalls} calls to this mobile in agent_runs`);
+    return { outcome: 'exhausted', notes: `Lifetime cap (${MAX_CALL_ATTEMPTS}) reached for this mobile` };
+  }
+
+  // Rail B: 12h cooldown per mobile
+  if (recentCalls > 0) {
+    console.warn(`[dental-outbound] ${norm} cooldown: called ${recentCalls}x in last ${COOLDOWN_HOURS}h — skipping`);
+    await logRun('skipped', `cooldown: ${recentCalls} call(s) in last ${COOLDOWN_HOURS}h`);
+    return { outcome: 'cooldown', notes: `Called within last ${COOLDOWN_HOURS}h` };
+  }
+
+  // Rail C: global daily cap (rolling 24h window)
+  if (dailyCalls >= dailyCap) {
+    console.warn(`[dental-outbound] daily cap: ${dailyCalls}/${dailyCap} calls in last 24h — halting`);
+    // Alert only on the FIRST blocked call so you get one SMS per cap hit, not one per blocked lead
+    if (dailyCalls === dailyCap) {
+      const alertMobile = process.env.PRACTICE_ALERT_MOBILE;
+      if (alertMobile) {
+        sendSMS(
+          alertMobile,
+          `StaffxAI: Daily call cap of ${dailyCap} reached. No more calls today. Check Vercel logs.`,
+        ).catch((e: unknown) =>
+          console.error('[dental-outbound] daily-cap alert SMS failed:', e instanceof Error ? e.message : e),
+        );
+      }
+    }
+    await logRun('skipped', `daily_cap: ${dailyCalls}/${dailyCap}`);
+    return { outcome: 'halted', notes: `Daily cap (${dailyCap}) reached — ${dailyCalls} calls in last 24h` };
+  }
+
+  // ── 6. Retell outbound call ───────────────────────────────
   const apiKey  = process.env.RETELL_API_KEY;
   const fromNum = process.env.RETELL_FROM_NUMBER;
   const agentId = process.env.RETELL_AGENT_ID;
@@ -231,7 +350,6 @@ export async function triggerOutboundCall(
     return { outcome: 'skipped', notes };
   }
 
-  // All dynamic variable values must be strings — Retell rejects nulls
   const dynVars = {
     lead_id:            lead.id,
     first_name:         lead.first_name || 'there',
@@ -268,12 +386,13 @@ export async function triggerOutboundCall(
     const callId = result.call_id ?? '';
     console.log(`[dental-outbound] call initiated — call_id=${callId || 'unknown'}`);
 
-    // Store call_id and advance status on the lead
+    // Increment call_attempts and set status in the SAME write as setting sequence_status.
+    // This is critical: if they were separate writes, a crash between them could corrupt state.
     await updateLead({
       status:          'calling',
       sequence_status: 'calling',
       retell_call_id:  callId || null,
-      call_attempts:   (lead.call_attempts ?? 0) + 1,
+      call_attempts:   attempts + 1,  // single atomic write
     });
     await logRun('success', `call_id=${callId || 'unknown'}`);
     return { outcome: 'calling', notes: `call_id=${callId}` };

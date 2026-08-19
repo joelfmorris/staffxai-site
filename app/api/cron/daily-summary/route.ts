@@ -53,11 +53,14 @@ export async function GET(req: NextRequest) {
       .select('id', { count: 'exact', head: true })
       .gte('created_at', since24),
 
-    // Of those, how many got at least one call attempt
-    db.from('dental_enquiries')
+    // Actual outbound calls placed in the last 24h — query agent_runs,
+    // not dental_enquiries.call_attempts which only counts today's new leads
+    db.from('agent_runs')
       .select('id', { count: 'exact', head: true })
-      .gte('created_at', since24)
-      .gte('call_attempts', 1),
+      .eq('agent_name', 'retell')
+      .eq('status', 'success')
+      .filter('input->>action', 'eq', 'outbound_trigger')
+      .gte('started_at', since24),
 
     // Leads that moved to 'booked' in last 24h (any cohort)
     db.from('dental_enquiries')
