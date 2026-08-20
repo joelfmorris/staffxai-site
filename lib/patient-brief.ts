@@ -43,6 +43,7 @@ export interface LeadBrief {
   partner_attending?:                 boolean | null;
   previous_dentist?:                  string | null;
   previous_treatment_stopped_reason?: string | null;
+  deposit_promise_time?:              string | null;
   call_transcript_url?:               string | null;
 }
 
@@ -83,10 +84,16 @@ const C = {
 export function buildBriefHtml(lead: LeadBrief): string {
   const appt = lead.appointment_at ? fmtMelbourne(lead.appointment_at) : 'Time TBC';
 
-  // Helper: labelled row in the info table
-  const row = (label: string, value: string | null | undefined) =>
-    value?.trim()
-      ? `<tr>
+  // Helper: labelled row in the info table.
+  // required=true → renders a muted "— Not captured" placeholder rather than
+  // omitting the row entirely, so Dr Ana can see which sections weren't gathered.
+  const row = (label: string, value: string | null | undefined, required = false) => {
+    const hasValue = value?.trim();
+    if (!hasValue && !required) return '';
+    const cellContent = hasValue
+      ? value!
+      : `<span style="color:${C.muted};font-style:italic">— Not captured</span>`;
+    return `<tr>
           <td style="padding:10px 20px 10px 0;font-size:11px;font-weight:700;
                      text-transform:uppercase;letter-spacing:0.1em;
                      color:${C.muted};white-space:nowrap;vertical-align:top;width:150px;
@@ -95,10 +102,10 @@ export function buildBriefHtml(lead: LeadBrief): string {
           </td>
           <td style="padding:10px 0;font-size:14px;color:${C.text};line-height:1.6;
                      border-bottom:1px solid ${C.border}">
-            ${value}
+            ${cellContent}
           </td>
-        </tr>`
-      : '';
+        </tr>`;
+  };
 
   // Self-assessment block
   const selfRating   = lead.tooth_rating     != null ? `${lead.tooth_rating}/10`     : null;
@@ -114,10 +121,10 @@ export function buildBriefHtml(lead: LeadBrief): string {
     </div>` : '',
   ].filter(Boolean).join('');
 
-  const desiredOutcome = cat(lead.treatment_scope, lead.dental_situation, lead.treatment_interest);
-  const emotional      = cat(lead.emotional_impact, lead.lifestyle_impact);
-  const occasion       = cat(lead.milestone_event, lead.vacation_goal, lead.trigger_event);
-  const investment     = [
+  const desiredOutcome   = cat(lead.treatment_scope, lead.dental_situation, lead.treatment_interest);
+  const emotional        = cat(lead.emotional_impact, lead.lifestyle_impact);
+  const occasion         = cat(lead.milestone_event, lead.vacation_goal, lead.trigger_event);
+  const investment       = [
     cat(lead.investment_comfort, lead.funding_pathway),
     lead.payment_plan_eligible === true  ? 'Payment plan: eligible'     : null,
     lead.payment_plan_eligible === false ? 'Payment plan: not eligible' : null,
@@ -129,11 +136,12 @@ export function buildBriefHtml(lead: LeadBrief): string {
     lead.partner_attending === false ? '(not attending)' : null,
   );
   const prior = cat(
-    lead.prior_consult                          ? 'Has had prior consultation'            : null,
+    lead.prior_consult                          ? 'Has had prior consultation'               : null,
     lead.previous_dentist                       ? `Prev. dentist: ${lead.previous_dentist}` : null,
     lead.previous_treatment_stopped_reason,
   );
-  const verbatim = lead.verbatim_quotes ?? lead.call_notes ?? '';
+  const depositPromise   = lead.deposit_promise_time ? fmtMelbourne(lead.deposit_promise_time) : null;
+  const verbatim         = lead.verbatim_quotes ?? lead.call_notes ?? '';
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -179,13 +187,13 @@ export function buildBriefHtml(lead: LeadBrief): string {
     <div style="background:${C.white};padding:8px 32px 16px">
       <table style="width:100%;border-collapse:collapse">
         <tbody>
-          ${row('Desired outcome',   desiredOutcome)}
-          ${row('Emotional driver',  emotional)}
-          ${row('Occasion / deadline', occasion)}
-          ${row('Treatment discussed', cat(lead.treatment_scope, lead.treatment_interest))}
-          ${row('Investment',        investment || undefined)}
-          ${row('Attending',         attending)}
-          ${row('Prior attempts',    prior)}
+          ${row('Desired outcome',    desiredOutcome,      true)}
+          ${row('Emotional driver',   emotional,           true)}
+          ${row('Occasion / deadline', occasion,           true)}
+          ${row('Investment',         investment || undefined, true)}
+          ${row('Prior attempts',     prior,               true)}
+          ${row('Attending',          attending)}
+          ${row('Deposit promise',    depositPromise)}
         </tbody>
       </table>
     </div>
@@ -231,8 +239,15 @@ export function buildBriefText(lead: LeadBrief): string {
     '',
   ];
 
-  const section = (title: string, body: string | null | undefined) => {
-    if (!body?.trim()) return;
+  // required=true → prints "— Not captured" so every core section is visible
+  const section = (title: string, body: string | null | undefined, required = false) => {
+    if (!body?.trim()) {
+      if (!required) return;
+      lines.push(`  ${title}`);
+      lines.push('  — Not captured');
+      lines.push('');
+      return;
+    }
     lines.push(`  ${title}`);
     lines.push(`  ${body}`);
     lines.push('');
@@ -256,22 +271,24 @@ export function buildBriefText(lead: LeadBrief): string {
     lines.push('');
   }
 
-  section('DESIRED OUTCOME', cat(lead.treatment_scope, lead.dental_situation, lead.treatment_interest));
-  section('EMOTIONAL DRIVER', cat(lead.emotional_impact, lead.lifestyle_impact));
-  section('OCCASION / DEADLINE', cat(lead.milestone_event, lead.vacation_goal, lead.trigger_event));
-  section('TREATMENT DISCUSSED', cat(lead.treatment_scope, lead.treatment_interest));
-  section('INVESTMENT', investment);
+  section('DESIRED OUTCOME',    cat(lead.treatment_scope, lead.dental_situation, lead.treatment_interest), true);
+  section('EMOTIONAL DRIVER',   cat(lead.emotional_impact, lead.lifestyle_impact),                         true);
+  section('OCCASION / DEADLINE', cat(lead.milestone_event, lead.vacation_goal, lead.trigger_event),        true);
+  section('INVESTMENT',         investment,                                                                true);
+  section('PRIOR ATTEMPTS', cat(
+    lead.prior_consult                          ? 'Has had prior consultation'               : null,
+    lead.previous_dentist                       ? `Prev. dentist: ${lead.previous_dentist}` : null,
+    lead.previous_treatment_stopped_reason,
+  ), true);
   section('ATTENDING', cat(
     lead.who_involved,
     lead.partner_name ? `Partner: ${lead.partner_name}` : null,
     lead.partner_attending === true  ? '(attending)'     : null,
     lead.partner_attending === false ? '(not attending)' : null,
   ));
-  section('PRIOR ATTEMPTS', cat(
-    lead.prior_consult                          ? 'Has had prior consultation'               : null,
-    lead.previous_dentist                       ? `Prev. dentist: ${lead.previous_dentist}` : null,
-    lead.previous_treatment_stopped_reason,
-  ));
+  if (lead.deposit_promise_time) {
+    section('DEPOSIT PROMISE', fmtMelbourne(lead.deposit_promise_time));
+  }
 
   if (lead.call_transcript_url) {
     lines.push('  CALL TRANSCRIPT');
